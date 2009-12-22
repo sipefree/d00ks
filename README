@@ -7,3 +7,5 @@ RUNNING
 
 	program.debug() starts a simple debugging REPL. Currently the
 	only working command is 's' for step. Breakpoints are coming soon.
+
+	This is started automatically by running parser.py
