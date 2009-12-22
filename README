@@ -1,0 +1,9 @@
+RUNNING
+	Navigate to the d00ks directory and run the following command:
+	$ python parser.py
+
+	There is a basic ARM program in there that will compile and run.
+	You can modify the program etc etc.
+
+	program.debug() starts a simple debugging REPL. Currently the
+	only working command is 's' for step. Breakpoints are coming soon.
