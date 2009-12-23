@@ -2,31 +2,55 @@ import cond
 import instruction
 import register
 
+class area(object):
+	"""Represents an assembler AREA directive"""
+	def __init__(self, label, attrs):
+		self.label = label
+		self.attrs = attrs
+	def __repr__(self):
+		return "AREA %s %s"%(self.label, ",".join(self.attrs))
+		
+
 class program(object):
 	"""Represents an ARM program."""
-	def __init__(self, instructions=[]):
+	def __init__(self):
 		super(program, self).__init__()
-		self.instructions = instructions
+		self.code = []
 		self.registers = register.registers()
 	
-	def compile(self, instr_tuple_list):
-		self.instructions = []
-		i = 0
-		for (label,ins) in instr_tuple_list:
-			self.instructions.append(ins)
-			if label:
-				self.registers.symbol_insert(label, i, ins)
-			i = i + 1
+	def compile(self, tuples):
+		start_s = 0
+		code_s = 1
+		data_s = 2
+		mode = start_s
+		
+		code_woffset = 0
+		data_boffset = 0
+		
+		self.code = []
+		for (label,line) in tuples:
+			if type(line) == area:
+				if "CODE" in line.attrs:
+					if "DATA" in line.attrs:
+						raise SyntaxError("AREA %s cannot have both CODE and DATA attrs!"%line.label)
+					mode = code_s
+				continue
+			if mode == code_s:
+				if isinstance(line, instruction.instruction):
+					self.code.append(line)
+					if label:
+						self.registers.symbol_insert(label, code_woffset, line)
+					code_woffset += 1
 	
 	def add_instr(self, instruction):
-		self.instructions.append(instruction)
+		self.code.append(instruction)
 	
 	def start(self):
 		self.registers = register.registers()
 
 	def step(self):
 		# fetch/decode
-		instr = self.instructions[self.registers[self.registers.PC]]
+		instr = self.code[self.registers[self.registers.PC]]
 		print str(instr)
 		
 		# execute

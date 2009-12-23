@@ -1,22 +1,7 @@
 import ply.lex as lex
 import instruction
 
-reserved = {
-	
-}
-
-tokens = [
-	'CONSTNUM',
-	'HEXNUM',
-	'REGISTER',
-	'LABEL',
-	'LABELTARGET',
-	'IMMTARGET',
-	'IMMHEXTARGET',
-	'COMMENT',
-	'STATUS',
-	'LINK',
-	
+reserved = [
 	'SL',
 	'FP',
 	'IP',
@@ -24,6 +9,7 @@ tokens = [
 	'LR',
 	'PC',
 	
+	# instructions
 	'ADC',
 	'ADD',
 	'AND',
@@ -68,6 +54,7 @@ tokens = [
 	'UMLAL',
 	'UMULL',
 	
+	# conditionals
 	'AL',
 	'CC',
 	'CS',
@@ -85,7 +72,30 @@ tokens = [
 	'PL',
 	'VC',
 	'VS',
-] + list(reserved.values())
+
+	# directives
+	'AREA',
+	'CODE',
+	'DATA',
+	'READONLY',
+	'ALIGN',
+	'READWRITE',
+	'NOINIT',
+]
+
+tokens = [
+	'CONSTNUM',
+	'HEXNUM',
+	'REGISTER',
+	'LABEL',
+	'LABELTARGET',
+	'IMMTARGET',
+	'IMMHEXTARGET',
+	'COMMENT',
+	'STATUS',
+	'LINK',
+	
+] + reserved
 
 
 
@@ -107,36 +117,6 @@ def t_REGISTER(t):
 	return t
 
 
-t_LABEL = r'[a-z_][a-zA-Z0-9_]+'
-
-def t_LABELTARGET(t):
-	r'\=[a-z_][a-zA-Z0-0_]+'
-	t.value = instruction.label(t.value[1:])
-	return t
-
-def t_IMMTARGET(t):
-	r'\=\d+'
-	t.value = instruction.immediate(int(t.value[1:]))
-	return t
-
-def t_IMMHEXTARGET(t):
-	r'\=0x[A-Fa-f0-9]+'
-	t.value = instruction.immediate(int(t.value[1:], 16))
-	return t
-
-def t_COMMENT(t):
-	r'\;.*'
-	pass
-	
-
-def t_newline(t):
-	r'\n+'
-	t.lexer.lineno += len(t.value)
-
-def t_error(t):
-    print "Illegal character '%s'" % t.value[0]
-    t.lexer.skip(1)
-
 t_STATUS = r'(s|S)'
 t_LINK = r'(l|L)'
 t_SL = r'(sl|SL)'
@@ -144,6 +124,14 @@ t_FP = r'(fp|FP)'
 t_IP = r'(ip|IP)'
 t_LR = r'(lr|LR)'
 t_PC = r'(pc|PC)'
+
+t_AREA = r'(area|AREA)'
+t_CODE = r'(code|CODE)'
+t_DATA = r'(data|DATA)'
+t_READONLY = r'(readonly|READONLY)'
+t_ALIGN = r'(align|ALIGN)'
+t_READWRITE = r'(readwrite|READWRITE)'
+t_NOINIT = r'(noinit|NOINIT)'
 
 t_ADC = r'(adc|ADC)'
 t_ADD = r'(add|ADD)'
@@ -205,6 +193,40 @@ t_NE = r'(ne|NE)'
 t_PL = r'(pl|PL)'
 t_VC = r'(vc|VC)'
 t_VS = r'(vs|VS)'
+
+def t_LABEL(t):
+	r'[a-zA-Z_][a-zA-Z0-9_]+'
+	t.type = t.value if t.value in reserved else "LABEL"
+	return t
+
+def t_LABELTARGET(t):
+	r'\=[A-Za-z_][a-zA-Z0-0_]+'
+	t.value = instruction.label(t.value[1:])
+	return t
+
+def t_IMMTARGET(t):
+	r'\=\d+'
+	t.value = instruction.immediate(int(t.value[1:]))
+	return t
+
+def t_IMMHEXTARGET(t):
+	r'\=0x[A-Fa-f0-9]+'
+	t.value = instruction.immediate(int(t.value[1:], 16))
+	return t
+
+def t_COMMENT(t):
+	r'\;.*'
+	pass
+	
+
+def t_newline(t):
+	r'\n+'
+	t.lexer.lineno += len(t.value)
+
+def t_error(t):
+    print "Illegal character '%s'" % t.value[0]
+    t.lexer.skip(1)
+
 
 lex.lex()
 

@@ -21,6 +21,10 @@ def p_line(p):
 	'line : command'
 	p[0] = ('', p[1])
 
+def p_directivecmd(p):
+	'command : directive'
+	p[0] = p[1]
+
 ######
 # ADC
 ######
@@ -105,7 +109,7 @@ def p_brk_(p):
 	'b_cmd : B'
 	p[0] = (p[1], cond.AL, False)
 
-def p_brkcl(p):
+def p_brklc(p):
 	'b_cmd : B LINK condition'
 	p[0] = (p[1], p[3], True)
 
@@ -113,7 +117,7 @@ def p_brkc(p):
 	'b_cmd : B condition'
 	p[0] = (p[1], p[2], False)
 
-def p_brkcl(p):
+def p_brkl(p):
 	'b_cmd : B LINK'
 	p[0] = (p[1], cond.AL, True)	
 	
@@ -212,29 +216,6 @@ def p_cmpc(p):
 	'cmp_cmd : CMP condition'
 	p[0] = (p[1], p[2], False)
 
-######
-# CMP
-######
-def p_cmp(p):
-	'command : cmp_cmd argument shifter'
-	(cmd, con, s) = p[1]
-	p[0] = instruction.CMP(con, s, p[2].value, p[3])
-
-def p_cmp_(p):
-	'cmp_cmd : CMP'
-	p[0] = (p[1], cond.AL, False)
-
-def p_cmps(p):
-	'cmp_cmd : CMP STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_cmpcs(p):
-	'cmp_cmd :  CMP condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_cmpc(p):
-	'cmp_cmd : CMP condition'
-	p[0] = (p[1], p[2], False)
 
 # ######
 # # CPY
@@ -791,6 +772,42 @@ def p_shift_rrx(p):
 	'shift : RRX'
 	p[0] = instruction.RRX
 
+def p_directive(p):
+	'directive : AREA LABEL dir_attrlist'
+	p[0] = simulator.area(p[2], p[3])
+
+def p_dir_attrlist_(p):
+	'dir_attrlist : dir_attr'
+	p[0] = [p[1]]
+
+def p_dir_attrlist(p):
+	'dir_attrlist : dir_attrlist dir_attr'
+	p[0] = p[1] + [p[2]]
+
+def p_dir_attr_align(p):
+	'dir_attr : ALIGN'
+	p[0] = p[1]
+
+def p_dir_attr_code(p):
+	'dir_attr : CODE'
+	p[0] = p[1]
+
+def p_dir_attr_data(p):
+	'dir_attr : DATA'
+	p[0] = p[1]
+
+def p_dir_attr_noinit(p):
+	'dir_attr : NOINIT'
+	p[0] = p[1]
+
+def p_dir_attr_readonly(p):
+	'dir_attr : READONLY'
+	p[0] = p[1]
+
+def p_dir_attr_readwrite(p):
+	'dir_attr : READWRITE'
+	p[0] = p[1]
+
 
 def p_error(p):
 	print "Syntax error at %s!"%p
@@ -800,6 +817,8 @@ parser = yacc.yacc()
 prog = simulator.program()
 
 prog = """
+AREA Hamming, CODE, READONLY
+
 start
 	; Load a test value into R1
 	
@@ -946,10 +965,10 @@ pp = pprint.PrettyPrinter()
 output = parser.parse(prog)
 pp.pprint(output)
 
-prog = simulator.program()
-prog.compile(output)
+program = simulator.program()
+program.compile(output)
 
-prog.debug()
+program.debug()
 
 
 
