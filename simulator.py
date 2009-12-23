@@ -1,6 +1,26 @@
+##########################################################################
+# This file is part of d00ks.
+# 
+# d00ks is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# d00ks is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with d00ks.  If not, see <http://www.gnu.org/licenses/>.
+##########################################################################
+
+
+
 import cond
 import instruction
 import register
+import memory
 
 class area(object):
 	"""Represents an assembler AREA directive"""
@@ -17,6 +37,7 @@ class program(object):
 		super(program, self).__init__()
 		self.code = []
 		self.registers = register.registers()
+		self.memory = memory.memory(1024)
 	
 	def compile(self, tuples):
 		start_s = 0
@@ -25,22 +46,34 @@ class program(object):
 		mode = start_s
 		
 		code_woffset = 0
-		data_boffset = 0
+		data_boffset = 0xA1000000
 		
 		self.code = []
+		
+		
 		for (label,line) in tuples:
 			if type(line) == area:
 				if "CODE" in line.attrs:
 					if "DATA" in line.attrs:
 						raise SyntaxError("AREA %s cannot have both CODE and DATA attrs!"%line.label)
 					mode = code_s
+				elif "DATA" in line.attrs:
+					mode = data_s
 				continue
 			if mode == code_s:
 				if isinstance(line, instruction.instruction):
 					self.code.append(line)
 					if label:
-						self.registers.symbol_insert(label, code_woffset, line)
+						self.registers.symbol_insert(label, code_woffset)
 					code_woffset += 1
+			elif mode == data_s:
+				if isinstance(line, memory.store):
+					if label:
+						self.registers.symbol_insert(label, data_boffset)
+					line.store(self.memory, data_boffset)
+					data_boffset += line.size()
+		self.memory.debug()
+					
 	
 	def add_instr(self, instruction):
 		self.code.append(instruction)

@@ -1,9 +1,29 @@
+##########################################################################
+# This file is part of d00ks.
+# 
+# d00ks is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# d00ks is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with d00ks.  If not, see <http://www.gnu.org/licenses/>.
+##########################################################################
+
+
+
 import ply.yacc as yacc
 from lexer import tokens
 import instruction
 import cond
 import register
 import simulator
+import memory
 
 def p_commands_(p):
 	'commands :'
@@ -606,7 +626,23 @@ def p_umlalcs(p):
 def p_umlalc(p):
 	'umlal_cmd : UMLAL condition'
 	p[0] = (p[1], p[2], False)
-	
+
+######
+# DCB
+######
+def p_dcb(p):
+	'command : DCB dcb_list'
+	p[0] = memory.DCB(p[2])
+
+def p_dcb_list_(p):
+	'dcb_list : dcb_item'
+	p[0] = [p[1]]
+
+def p_dcb_list(p):
+	'dcb_list : dcb_list dcb_item'
+	p[0] = p[1] + [p[2]]
+
+
 ######
 # UMULL
 ######
@@ -633,10 +669,10 @@ def p_umullc(p):
 
 
 ###########
-# NOISE
+# target
 ###########
 
-	
+# FIXME: why is target unreachable?
 def p_target_label(p):
 	'target : LABELTARGET'
 	p[0] = p[1]
@@ -649,6 +685,10 @@ def p_target_immhex(p):
 	'target : IMMHEXTARGET'
 	p[0] = p[1]
 
+################
+# branchtarget
+################
+
 def p_branchtarget_label(p):
 	'branchtarget : LABEL'
 	p[0] = instruction.branchtarget(True, p[1])
@@ -656,6 +696,10 @@ def p_branchtarget_label(p):
 def p_branchtarget_addr(p):
 	'branchtarget : argument'
 	p[0] = p[1]
+
+###############
+# shifter
+###############
 
 def p_shifter_arg(p):
 	'shifter : argument shift argument'
@@ -667,7 +711,9 @@ def p_shifter_none(p):
 	'shifter : argument'
 	p[0] = instruction.shifter(p[1])
 
-
+#############
+# argument
+#############
 
 def p_argument_h(p):
 	'argument : HEXNUM'
@@ -682,7 +728,9 @@ def p_argument_r(p):
 	'argument : REGISTER'
 	p[0] = p[1]
 
-
+#############
+# condition
+#############
 
 def p_condition_al(p):
 	'condition : AL'
@@ -752,6 +800,9 @@ def p_condition_vs(p):
 	'condition : VS'
 	p[0] = cond.VS
 
+########
+# shift
+########
 def p_shift_lsl(p):
 	'shift : LSL'
 	p[0] = instruction.LSL
@@ -772,10 +823,18 @@ def p_shift_rrx(p):
 	'shift : RRX'
 	p[0] = instruction.RRX
 
+
+###############
+# directive
+###############
 def p_directive(p):
 	'directive : AREA LABEL dir_attrlist'
 	p[0] = simulator.area(p[2], p[3])
 
+
+################
+# dir_attrlist
+################
 def p_dir_attrlist_(p):
 	'dir_attrlist : dir_attr'
 	p[0] = [p[1]]
@@ -784,6 +843,10 @@ def p_dir_attrlist(p):
 	'dir_attrlist : dir_attrlist dir_attr'
 	p[0] = p[1] + [p[2]]
 
+
+##############
+# dir_attr
+##############
 def p_dir_attr_align(p):
 	'dir_attr : ALIGN'
 	p[0] = p[1]
@@ -809,6 +872,28 @@ def p_dir_attr_readwrite(p):
 	p[0] = p[1]
 
 
+#############
+# dcb_items
+#############
+def p_dcb_item_string(p):
+	'dcb_item : STRING'
+	p[0] = p[1]
+
+def p_dcb_item_num(p):
+	'dcb_item : MEMNUM'
+	p[0] = p[1]
+
+def p_dcb_item_hexnum(p):
+	'dcb_item : MEMHEXNUM'
+	p[0] = p[1]
+
+############
+# addrmode
+############
+def p_addrmode_label(p):
+	'addrmode : target'
+
+
 def p_error(p):
 	print "Syntax error at %s!"%p
 
@@ -817,139 +902,19 @@ parser = yacc.yacc()
 prog = simulator.program()
 
 prog = """
-AREA Hamming, CODE, READONLY
+AREA MemTest, CODE, READONLY
 
 start
-	; Load a test value into R1
-	
-	MOV	R1, #0xAC
+	MOV R0, #1
+	MOV R1, #0x40
+	ADD R2, R0, R0
+stop B stop
 
-	; Begin by expanding the 8-bit value to 12-bits, inserting
-	; zeros in the positions for the four check bits (bit 0, bit 1, bit 3
-	; and bit 7).
-	
-	AND	R2, R1, #0x1		; Clear all bits apart from d0
-	MOV	R0, R2, LSL #2		; Align data bit d0
-	
-	AND	R2, R1, #0xE		; Clear all bits apart from d1, d2, & d3
-	ORR	R0, R0, R2, LSL #3	; Align data bits d1, d2 & d3 and combine with d0
-	
-	AND	R2, R1, #0xF0		; Clear all bits apart from d3-d7
-	ORR	R0, R0, R2, LSL #4	; Align data bits d4-d7 and combine with d0-d3
-	
-	; We now have a 12-bit value in R0 with empty (0) check bits in
-	; the correct positions
-	
-	; Generate check bit c0
-	
-	EOR	R2, R0, R0, LSR #2	; Generate c0 parity bit using parity tree
-	EOR	R2, R2, R2, LSR #4	; ... second iteration ...
-	EOR	R2, R2, R2, LSR #8	; ... final iteration
-	
-	AND	R2, R2, #0x1		; Clear all but check bit c0
-	ORR	R0, R0, R2		; Combine check bit c0 with result
-	
-	; Generate check bit c1
-	
-	EOR	R2, R0, R0, LSR #1	; Generate c1 parity bit using parity tree
-	EOR	R2, R2, R2, LSR #4	; ... second iteration ...
-	EOR	R2, R2, R2, LSR #8	; ... final iteration
-	
-	AND	R2, R2, #0x2		; Clear all but check bit c1
-	ORR	R0, R0, R2		; Combine check bit c1 with result
-	
-	; Generate check bit c2
-	
-	EOR	R2, R0, R0, LSR #1	; Generate c2 parity bit using parity tree
-	EOR	R2, R2, R2, LSR #2	; ... second iteration ...
-	EOR	R2, R2, R2, LSR #8	; ... final iteration
-	
-	AND	R2, R2, #0x8		; Clear all but check bit c2
-	ORR	R0, R0, R2		; Combine check bit c2 with result	
-	
-	; Generate check bit c3
-	
-	EOR	R2, R0, R0, LSR #1	; Generate c3 parity bit using parity tree
-	EOR	R2, R2, R2, LSR #2	; ... second iteration ...
-	EOR	R2, R2, R2, LSR #4	; ... final iteration
-	
-	AND	R2, R2, #0x80		; Clear all but check bit c3
-	ORR	R0, R0, R2		; Combine check bit c3 with result
-	
-	; We now have a 12-bit value with Hamming code check bits
-	
-	; Create an artificial "error" in the encoded value by flipping a single bit
-	
-	EOR	R0, R0, #0x100		; Flip bit 8 to test
-	
-	;
-	; YOUR EXTENSION TO THE PROGRAM TO CORRECT SINGLE-BIT
-	; ERRORS GOES HERE
-	;
-	
-	MOV	R1, R0			; copy received value to R1
-	BIC	R1, R1, #0x8B		; clear all check bits
-	
-	; We are now back to line 31, with a 12 bit value
-	; in R1 with empty check bits
+AREA Strings, DATA, READWRITE
 
-	; Generate check bit c0
-	EOR	R2, R1, R1, LSR #2	; c0
-	EOR	R2, R2, R2, LSR #4
-	EOR	R2, R2, R2, LSR #8
-	
-	AND	R2, R2, #0x1
-	ORR	R1, R1, R2
-	
-	; Generate c1
-	EOR	R2, R1, R1, LSR #1
-	EOR	R2, R2, R2, LSR #4
-	EOR	R2, R2, R2, LSR #8
-	
-	AND	R2, R2, #0x2
-	ORR	R1, R1, R2
-
-	; Generate c2
-	EOR	R2, R1, R1, LSR #1
-	EOR	R2, R2, R2, LSR #2
-	EOR	R2, R2, R2, LSR #8
-
-	AND	R2, R2, #0x8
-	ORR	R1, R1, R2
-
-	; Generate c3
-	EOR	R2, R1, R1, LSR #1
-	EOR	R2, R2, R2, LSR #2
-	EOR	R2, R2, R2, LSR #4
-
-	AND	R2, R2, #0x80
-	ORR	R1, R1, R2
-
-	; We now have recreated the hamming code
-	
-	EOR	R3, R0, R1		; get the difference of the original and the new
-
-	; Isolate check bits
-	MOV	R4, R3 
-	AND	R4, R4, #0x3		; clear all but c0, c1
-	MOV	R5, R3, LSR #1		; move c2 into place
-	AND	R5, R5, #0x4		; isolate c2
-	ORR	R4, R4, R5			; merge c2 to check
-	MOV	R5, R3, LSR #4		; move c3 into place
-	AND	R5, R5, #0x8		; isolate c3
-	ORR	R4, R4, R5			; merge c3 into check
-
-	SUB	R3, R4, #1		; r3 = r4 - 1
-	MOV	R2, #1			; r1 = 1
-	MOV	R2, R2, LSL R3	; r2 = r2 << r3
-	
-	; We nowhave a 1 in the location that needs
-	; to be swapped
-											 
-	EOR	R0, R0, R2			
-
-stop	B	stop
+string1 DCB "hello world",0,"test",0
 """
+
 print "INPUT >>>"
 i = 1
 for line in prog.split("\n"):

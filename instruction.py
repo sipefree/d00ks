@@ -1,3 +1,22 @@
+##########################################################################
+# This file is part of d00ks.
+# 
+# d00ks is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# d00ks is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with d00ks.  If not, see <http://www.gnu.org/licenses/>.
+##########################################################################
+
+
+
 from ctypes import c_uint
 
 class argument(object):
@@ -59,6 +78,51 @@ def label(lab):
 
 def immediate(num):
 	return target(False, num)
+
+class addrmode(object):
+	'''Just a register'''
+	def __init__(self, rn):
+		self.rn = rn
+	def __repr__(self):
+		return str(self)
+	def get(registers):
+		return registers[self.rn]
+	def __str__(self):
+		return "[R%i]"%self.rn
+
+class addrmode_immoffset(addrmode):
+	'''Immediate offset'''
+	def __init__(self, rn, shifter):
+		self.rn = rn
+		self.shifter = shifter
+	def get(registers):
+		return registers[self.rn] + shifter.apply(registers)
+	def __str__(self):
+		return "[R%i, %s]"%(self.rn, self.shifter)
+
+class addrmode_preindexed(addrmode):
+	'''Pre-indexed register'''
+	def __init__(self, rn, shifter):
+		self.rn = rn
+		self.shifter = shifter
+	def get(registers):
+		registers[self.rn] += shifter.apply(registers)
+		return registers[self.rn]
+	def __str__(self):
+		return "[R%i, %s]!"%(self.rn, self.shifter)
+	
+class addrmode_postindexed(addrmode):
+	'''Post-indexed register'''
+	def __init__(self, rn, shifter):
+		self.rn = rn
+		self.shifter = shifter
+	def get(registers):
+		val = registers[self.rn]
+		registers[self.rn] += shifter.apply(registers)
+		return val
+	def __str__(self):
+		return "[R%i], %s"%(self.rn, self.shifter)
+		
 
 class shifter(object):
 	def __init__(self, rm):

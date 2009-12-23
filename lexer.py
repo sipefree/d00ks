@@ -1,3 +1,22 @@
+##########################################################################
+# This file is part of d00ks.
+# 
+# d00ks is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# d00ks is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with d00ks.  If not, see <http://www.gnu.org/licenses/>.
+##########################################################################
+
+
+
 import ply.lex as lex
 import instruction
 
@@ -81,6 +100,11 @@ reserved = [
 	'ALIGN',
 	'READWRITE',
 	'NOINIT',
+	
+	# memory
+	'DCB',
+	'DCW',
+	'DCH',
 ]
 
 tokens = [
@@ -94,12 +118,23 @@ tokens = [
 	'COMMENT',
 	'STATUS',
 	'LINK',
+	'OPENSQ',
+	'CLOSESQ',
+	'STRING',
+	'MEMNUM',
+	'MEMHEXNUM',
 	
 ] + reserved
 
-
+t_OPENSQ = r'\['
+t_CLOSESQ = r'\]'
 
 t_ignore = ' \t,'
+
+def t_STRING(t):
+	r'\"([^\\\n]|(\\.))*?\"'
+	t.value = t.value[1:-1]
+	return t
 
 def t_HEXNUM(t):
 	r'\#[-+]?0x[A-Fa-f0-9]+'
@@ -109,6 +144,16 @@ def t_HEXNUM(t):
 def t_CONSTNUM(t):
 	r'\#[-+]?\d+'
 	t.value = instruction.num(int(t.value[1:]))
+	return t
+	
+def t_MEMHEXNUM(t):
+	r'[-+]?0x[A-Fa-f0-9]+'
+	t.value = int(t.value, 16)
+	return t
+
+def t_MEMNUM(t):
+	r'[-+]?\d+'
+	t.value = int(t.value)
 	return t
 
 def t_REGISTER(t):
@@ -132,6 +177,10 @@ t_READONLY = r'(readonly|READONLY)'
 t_ALIGN = r'(align|ALIGN)'
 t_READWRITE = r'(readwrite|READWRITE)'
 t_NOINIT = r'(noinit|NOINIT)'
+
+t_DCB = r'(dcb|DCB)'
+t_DCW = r'(dcw|DCW)'
+t_DCH = r'(dch|DCH)'
 
 t_ADC = r'(adc|ADC)'
 t_ADD = r'(add|ADD)'
@@ -200,7 +249,7 @@ def t_LABEL(t):
 	return t
 
 def t_LABELTARGET(t):
-	r'\=[A-Za-z_][a-zA-Z0-0_]+'
+	r'\=[A-Za-z_][a-zA-Z0-9_]+'
 	t.value = instruction.label(t.value[1:])
 	return t
 
@@ -244,3 +293,9 @@ lex.lex()
 # 	if not tok: break
 # 	print tok
 # 
+
+def toks():
+	while 1:
+		tok = lex.token()
+		if not tok: break
+		print tok
