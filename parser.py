@@ -169,6 +169,9 @@ def p_bicc(p):
 ######
 # BKPT
 ######
+def p_bkpt(p):
+	'command : BKPT'
+	p[0] = instruction.BKPT()
 
 ######
 # BLX
@@ -642,6 +645,21 @@ def p_dcb_list(p):
 	'dcb_list : dcb_list dcb_item'
 	p[0] = p[1] + [p[2]]
 
+#########
+# SPACE
+#########
+def p_space(p):
+	'command : SPACE memnum'
+	p[0] = memory.SPACE(p[2])
+
+def p_memnum(p):
+	'memnum : MEMNUM'
+	p[0] = p[1]
+
+def p_hexmemnum(p):
+	'memnum : MEMHEXNUM'
+	p[0] = p[1]
+
 
 ######
 # UMULL
@@ -913,6 +931,7 @@ stop B stop
 AREA Strings, DATA, READWRITE
 
 string1 DCB "hello world",0,"test",0
+string2 SPACE 128
 """
 
 print "INPUT >>>"

@@ -15,9 +15,26 @@
 # along with d00ks.  If not, see <http://www.gnu.org/licenses/>.
 ##########################################################################
 
+"""
+Represents the registers in the ARM simulator.
 
+It also stores the symbol table, for easy lookup.
+"""
 
 class registers(object):
+	"""
+	This registers object is passed around. It contains
+	the registers, stored as a python list, and functions
+	for dealing with them.
+	
+	It implements the magic methods __getitem__ and __setitem__
+	to make access and setting easy.
+	
+	Symbols are stored as a python dict.
+	
+	The class also stores some bit masks pointing to the
+	location of various flags in the CPSR etc.
+	"""
 	def __init__(self):
 		self.regs = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 		self.LR = 14
@@ -69,6 +86,7 @@ class registers(object):
 		self.changed = []
 	
 	def p(self):
+		'Prints the contents of the registers'
 		ret = "registers {\n"
 		for i in range(0, len(self.regs)):
 			ret += "%s	R%i = 0x%08X = %d\n"%("*" if i in self.changed else " ", i, self.regs[i], self.regs[i])

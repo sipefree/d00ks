@@ -15,7 +15,12 @@
 # along with d00ks.  If not, see <http://www.gnu.org/licenses/>.
 ##########################################################################
 
+"""
+This file represents the actual simulator itself.
 
+It is rather simple, containing methods for stepping
+through code.
+"""
 
 import cond
 import instruction
@@ -30,6 +35,9 @@ class area(object):
 	def __repr__(self):
 		return "AREA %s %s"%(self.label, ",".join(self.attrs))
 		
+class Breakpoint(Exception):
+	pass
+		
 
 class program(object):
 	"""Represents an ARM program."""
@@ -40,6 +48,18 @@ class program(object):
 		self.memory = memory.memory(1024)
 	
 	def compile(self, tuples):
+		"""
+		This method takes a list of tuples in the format:
+		(label, instruction)
+		
+		Where label is an optional string that will cause the
+		address of instruction to be placed in the symbol table
+		under that label.
+		
+		The instruction itself comes from the 'command' part of
+		the parser. It can be an ARM instruction like MOV, or
+		a directive like AREA or DCB.
+		"""
 		start_s = 0
 		code_s = 1
 		data_s = 2
@@ -49,6 +69,8 @@ class program(object):
 		data_boffset = 0xA1000000
 		
 		self.code = []
+		
+		self.breakpoints = []
 		
 		
 		for (label,line) in tuples:
@@ -72,26 +94,49 @@ class program(object):
 						self.registers.symbol_insert(label, data_boffset)
 					line.store(self.memory, data_boffset)
 					data_boffset += line.size()
-		self.memory.debug()
+		self.breakpoints.append(code_woffset - 1)
 					
 	
-	def add_instr(self, instruction):
-		self.code.append(instruction)
-	
 	def start(self):
+		"""
+		Resets the registers, and by proxy, the program counter.
+		"""
 		self.registers = register.registers()
 
-	def step(self):
+	def step(self, debug=False, breaks=False):
+		"""
+		Steps through one instruction.
+		
+		"""
+		# catch breakpoint
+		if breaks:
+			if self.registers[self.registers.PC] in self.breakpoints:
+				raise Breakpoint()
+		
 		# fetch/decode
 		instr = self.code[self.registers[self.registers.PC]]
-		print str(instr)
+		if debug:
+			print str(instr)
 		
 		# execute
 		self.registers[self.registers.PC] += 1
 		instr.execute(self.registers)
-		if self.registers.changed != [15]:
+		if self.registers.changed != [15] and debug:
 			self.registers.p()
 		self.registers.set_clean()
+	
+	def run(self):
+		"""
+		Continues until breakpoint.
+		
+		"""
+		try:
+			while True:
+				self.step(breaks=True)
+		except:
+			print "Breakpoint detected!"
+			print str(self.code[self.registers[self.registers.PC]])
+			self.debug()
 			
 	def debug(self):
 		# simple repl
@@ -101,9 +146,13 @@ class program(object):
 			if cmd == "": cmd = lastcmd
 			lastcmd = cmd
 			if cmd == "s":
-				self.step()
+				self.step(debug=True)
 			elif cmd == "q":
 				break
 			elif cmd == "p":
 				self.registers.p()
+			elif cmd == "m":
+				self.memory.debug()
+			elif cmd == "c":
+				self.run()
 	

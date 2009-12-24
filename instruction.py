@@ -15,11 +15,30 @@
 # along with d00ks.  If not, see <http://www.gnu.org/licenses/>.
 ##########################################################################
 
+"""
+This file represents each instruction and everything that
+an instruction needs to execute.
+"""
 
 
 from ctypes import c_uint
+import simulator
 
 class argument(object):
+	"""
+	In ARM, arguments to instructions are usually either
+	registers or immediate values. This is an abstraction
+	of each of those which no matter which of these the
+	argument is, will return the correct value.
+	
+	It stores a value and isregister. If it's not a register
+	argument, then value is returned. If it is, then the value
+	of that register is returned.
+	
+	Registers are passed to the get() function regardless,
+	as the instruction doesn't care which type it is,
+	only the value.
+	"""
 	def __init__(self, isregister, value):
 		self.isregister = isregister
 		self.value = value
@@ -35,6 +54,9 @@ class argument(object):
 		else:
 			return "#0x%X"%self.value
 
+
+# helpers for each of the registers, useful
+# for debugging purposes
 R0 = argument(True, 0)
 R1 = argument(True, 1)
 R2 = argument(True, 2)
@@ -53,12 +75,22 @@ R14 = argument(True, 14)
 R15 = argument(True, 15)
 
 def reg(i):
+	'Helper function for creating arguments'
 	return argument(True, i)
 
 def num(i):
+	'Helper function for creating arguments'
 	return argument(False, i)
 	
 class target(object):
+	"""
+	Certain things can be loaded from either symbol locations
+	in memory, or as direct constant value. This class
+	abstracts those two distinctions, similar to argument.
+	
+	The registers provide access to the symbol table, for
+	convinience.
+	"""
 	def __init__(self, islabel, value):
 		self.islabel = islabel
 		self.value = value
@@ -70,13 +102,20 @@ class target(object):
 		return "=%s"%(self.value if self.islabel else "%X"%self.value)
 
 class branchtarget(target):
+	"""
+	The branch (B) instruction uses targets but the syntax doesn't
+	use the = sign. This is just for pretty printing.
+	"""
 	def __str__(self):
 		return "%s"%(self.value if self.islabel else "%X"%self.value)
 
+
 def label(lab):
+	'Helper function for creating targets'
 	return target(True, lab)
 
 def immediate(num):
+	'Helper function for creating targets'
 	return target(False, num)
 
 class addrmode(object):
@@ -125,6 +164,19 @@ class addrmode_postindexed(addrmode):
 		
 
 class shifter(object):
+	"""
+	In ARM, the last argument for many instructions can be
+	a so-called shifter operand. This can either be just
+	a value, a register, or a value/register with a bit-shift
+	by a constant amount, or a value/register with a bit shift
+	by the value of another register.
+	
+	This class abstracts those. Each of the different type
+	of shifter subclasses this class, using the argument()
+	class to make dealing with constant values or register
+	values easy. This basic class just has a value or a
+	register, kept in an argument object.
+	"""
 	def __init__(self, rm):
 		super(shifter, self).__init__()
 		self.rm = rm
@@ -136,7 +188,14 @@ class shifter(object):
 		return str(self.rm)
 
 class ASR(shifter):
-	"""rm, ASL <val>"""
+	"""
+	rm, ASR <val>
+	
+	Arithmetic shift right. Shifts right by <val> but
+	expanding the most significant bit.
+	
+	This allows for signed division by 2.
+	"""
 	def __init__(self, rm, arg):
 		self.rm = rm
 		self.arg = arg
@@ -164,7 +223,11 @@ class ASR(shifter):
 		return retval
 
 class LSL(shifter):
-	"""rm, LSL <val>"""
+	"""
+	rm, LSL <val>
+	
+	Logical shift left. Shifts contents left by <val>.
+	"""
 	def __init__(self, rm, arg):
 		self.rm = rm
 		self.arg = arg
@@ -182,7 +245,11 @@ class LSL(shifter):
 		return retval
 
 class LSR(shifter):
-	"""rm, LSR <val>"""
+	"""
+	rm, LSR <val>
+	
+	Logical shift right.
+	"""
 	def __init__(self, rm, arg):
 		self.rm = rm
 		self.arg = arg
@@ -200,7 +267,12 @@ class LSR(shifter):
 		return retval
 
 class ROR(shifter):
-	"""rm, ROR <val>"""
+	"""
+	rm, ROR <val>
+	
+	Rotate bits right. Anything that comes off the right,
+	goes back in on the left.
+	"""
 	def __init__(self, rm, arg):
 		self.rm = rm
 		self.arg = arg
@@ -226,7 +298,11 @@ class ROR(shifter):
 		return retval
 
 class RRX(shifter):
-	"""rm, ROR <val>"""
+	"""
+	rm, ROR <val>
+	
+	33-bit rotate right, using the C flag as the 33rd bit.
+	"""
 	def __init__(self, rm, arg):
 		self.rm = rm
 		self.arg = arg
@@ -254,7 +330,16 @@ class RRX(shifter):
 		
 
 class instruction(object):
-	"""docstring for instruction"""
+	"""
+	Abstract class representing an instruction.
+	
+	The default constructor takes arguments that are standard
+	for many instructions. Instructions that don't take these
+	arguments should override this method.
+	
+	The class also contains some helper functions for determining
+	carry and overflow and signedness.
+	"""
 	def __init__(self, cond, s, rd, rn,  shifter_operand):
 		super(instruction, self).__init__()
 		self.cond = cond
@@ -268,23 +353,35 @@ class instruction(object):
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 		
 	def signed_pos(self, value):
-		return value & (1 << 31)
-	def signed_neg(self, value):
+		'Is the value positive?'
 		return not (value & (1 << 31))
 	
+	def signed_neg(self, value):
+		'Is the value negative'
+		return value & (1 << 31)
+	
 	def sign(self, value):
+		'What is the sign of value?'
 		ans = 1 if self.signed_pos(value) else -1
 		return 0 if value == 0 else ans
 		
 	def carry_from(self, value):
+		'Is there carry in a 33 bit value?'
 		return 1 if value & (1 << 32) else 0
 	
 	def overflow_from(self, rn, rm, value):
+		"""
+		Overflow occurs when the sign of the operands was
+		the same but the result of the computation has caused
+		the sign to change.
+		"""
 		if self.sign(rn) == self.sign(rm):
 			return self.sign(rn) != self.sign(value)
 		else:
 			return False
+	
 	def twos_compliment(self, value):
+		'Returns twos compliment of a value'
 		return ((~value) + 1) & 0xFFFFFFFF
 	
 	def execute(self, registers):
@@ -294,7 +391,12 @@ class instruction(object):
 		return str(self)
 		
 class ADC(instruction):
-	"""ADC{cond}{S} <Rd>, <Rn>, <shifter_operand>"""
+	"""
+	ADC{cond}{S} <Rd>, <Rn>, <shifter_operand>
+	
+	Add with carry. Adds two values and accumulates it with
+	the current value of the carry bit.
+	"""
 	def execute(self, registers):
 		if self.cond(registers):
 			rm = self.shifter_operand.apply(registers)
@@ -311,7 +413,11 @@ class ADC(instruction):
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 				
 class ADD(instruction):
-	"""ADD{cond}{S} <Rd>, <Rn>, <shifter_operand>"""
+	"""
+	ADD{cond}{S} <Rd>, <Rn>, <shifter_operand>
+	
+	Adds two values.
+	"""
 	def execute(self, registers):
 		if self.cond(registers):
 			rm = self.shifter_operand.apply(registers)
@@ -328,7 +434,11 @@ class ADD(instruction):
 		
 
 class AND(instruction):
-	"""AND{cond}{S} <Rd>, <Rn>, <shifter_operand>"""
+	"""
+	AND{cond}{S} <Rd>, <Rn>, <shifter_operand>
+	
+	Calculates binary AND of two values.
+	"""
 	def execute(self, registers):
 		if self.cond(registers):
 			rm = self.shifter_operand.apply(registers, flags = self.s)
@@ -344,7 +454,11 @@ class AND(instruction):
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 
 class B(instruction):
-	"""B{L}{cond} <target_address>"""
+	"""
+	B{L}{cond} <target_address>
+	
+	Branch to target.
+	"""
 	def __init__(self, link, cond, target):
 		self.link = link
 		self.cond = cond
@@ -361,7 +475,11 @@ class B(instruction):
 			("L" if self.link else "", str(self.target))
 	
 class BIC(instruction):
-	"""BIC{cond}{S} <Rd>, <Rn>, <shifter_operand>"""
+	"""
+	BIC{cond}{S} <Rd>, <Rn>, <shifter_operand>
+	
+	Clear the bits specified by shifter_operand in Rn.
+	"""
 	def execute(self, registers):
 		if self.cond(registers):
 			rm = self.shifter_operand.apply(registers, flags = self.s)
@@ -381,13 +499,20 @@ class BIC(instruction):
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 
 class BKPT(instruction):
-	pass
+	def __init__(self):
+		pass
+	def execute(self, registers):
+		raise simulator.Breakpoint()
 
 class BX(B):
 	pass
 
 class CMN(instruction):
-	"""CMN{cond} Rn, <shifter_operand>"""
+	"""
+	CMN{cond} Rn, <shifter_operand>
+	
+	Compare negative.
+	"""
 	def __init__(self, cond, rn, shifter_operand):
 		super(instruction, self).__init__()
 		self.cond = cond
@@ -408,7 +533,11 @@ class CMN(instruction):
 			(self.cond.__name__, str(self.rn), str(self.shifter_operand))
 
 class CMP(instruction):
-	"""CMP{cond} <Rn>, <shifter_operand>"""
+	"""
+	CMP{cond} <Rn>, <shifter_operand>
+	
+	Compare.
+	"""
 	def __init__(self, cond, rn, shifter_operand):
 		super(instruction, self).__init__()
 		self.cond = cond
@@ -429,7 +558,11 @@ class CMP(instruction):
 			(self.cond.__name__, str(self.rn), str(self.shifter_operand))
 	
 class EOR(instruction):
-	"""EOR{cond}{S} <Rd>, <Rn>, <shifter_operand>"""
+	"""
+	EOR{cond}{S} <Rd>, <Rn>, <shifter_operand>
+	
+	Exclusive-OR
+	"""
 	def execute(self, registers):
 		if self.cond(registers):
 			rm = self.shifter_operand.apply(registers, flags = self.s)
@@ -463,7 +596,11 @@ class LDSH(instruction):
 	pass
 
 class MLA(instruction):
-	"""MLA{cond}{S} <Rd>, <Rm>, <Rs>, <Rn>"""
+	"""
+	MLA{cond}{S} <Rd>, <Rm>, <Rs>, <Rn>
+	
+	Multiply and accumulate.
+	"""
 	def __init__(self, cond, s, rd, rm, rs, rn):
 		self.cond = cond
 		self.s = s
@@ -485,7 +622,11 @@ class MLA(instruction):
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rm), str(self.rs), str(self.rn))
 
 class MOV(instruction):
-	"""MOV{cond}{S} <Rd>, <shifter_operand>"""
+	"""
+	MOV{cond}{S} <Rd>, <shifter_operand>
+	
+	Move.
+	"""
 	def __init__(self, cond, s, rd, shifter_operand):
 		self.cond = cond
 		self.s = s
@@ -510,7 +651,11 @@ class MSR(instruction):
 	pass
 
 class MUL(instruction):
-	"""MUL{cond}{S} <Rd>, <Rm>, <Rs>"""
+	"""
+	MUL{cond}{S} <Rd>, <Rm>, <Rs>
+	
+	Multiply.
+	"""
 	def __init__(self, cond, s, rd, rm, rs):
 		self.cond = cond
 		self.s = s
@@ -530,7 +675,11 @@ class MUL(instruction):
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rm), str(self.rs))
 
 class MVN(instruction):
-	"""MVN{cond}{S} <Rd>, <shifter_operand>"""
+	"""
+	MVN{cond}{S} <Rd>, <shifter_operand>
+	
+	Move negative.
+	"""
 	def __init__(self, cond, s, rd, shifter_operand):
 		self.cond = cond
 		self.s = s
@@ -549,7 +698,11 @@ class MVN(instruction):
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.shifter_operand))
 
 class ORR(instruction):
-	"""ORR{cond}{S} <Rd>, <Rn>, <shifter_operand>"""
+	"""
+	ORR{cond}{S} <Rd>, <Rn>, <shifter_operand>
+	
+	Binary-OR.
+	"""
 	def execute(self, registers):
 		if self.cond(registers):
 			rm = self.shifter_operand.apply(registers, flags = self.s)
@@ -565,7 +718,11 @@ class ORR(instruction):
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 
 class RSB(instruction):
-	"""RSB{cond}{S} <Rd>, <Rn>, <shifter_operand>"""
+	"""
+	RSB{cond}{S} <Rd>, <Rn>, <shifter_operand>
+	
+	Reverse subtract.
+	"""
 	def execute(self, registers):
 		if self.cond(registers):
 			rm = self.shifter_operand.apply(registers)
@@ -582,7 +739,11 @@ class RSB(instruction):
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 
 class RSC(instruction):
-	"""RSC{cond}{S} <Rd>, <Rn>, <shifter_operand>"""
+	"""
+	RSC{cond}{S} <Rd>, <Rn>, <shifter_operand>
+	
+	Reverse subtract with carry.
+	"""
 	def execute(self, registers):
 		if self.cond(registers):
 			rm = self.shifter_operand.apply(registers)
@@ -599,7 +760,11 @@ class RSC(instruction):
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 
 class SBC(instruction):
-	"""SBC{cond}{S} <Rd>, <Rn>, <shifter_operand>"""
+	"""
+	SBC{cond}{S} <Rd>, <Rn>, <shifter_operand>
+	
+	Subtract with carry.
+	"""
 	def execute(self, registers):
 		if self.cond(registers):
 			rm = self.shifter_operand.apply(registers)
@@ -616,7 +781,11 @@ class SBC(instruction):
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 
 class SMLAL(instruction):
-	"""SMLAL{cond}{S} <RdLo>, <RdHi>, <Rm>, <Rs>"""
+	"""
+	SMLAL{cond}{S} <RdLo>, <RdHi>, <Rm>, <Rs>
+	
+	Signed multiply long with accumulate.
+	"""
 	def __init__(self, cond, s, rdlo, rdhi, rm, rs):
 		self.cond = cond
 		self.s = s
@@ -640,7 +809,11 @@ class SMLAL(instruction):
 			(self.cond.__name__, "S" if self.s else "", self.rdlo, self.rdhi, str(self.rm), str(self.rs))
 
 class SMULL(instruction):
-	"""SMULL{cond}{S} <RdLo>, <RdHi>, <Rm>, <Rs>"""
+	"""
+	SMULL{cond}{S} <RdLo>, <RdHi>, <Rm>, <Rs>
+	
+	Signed multiply long.
+	"""
 	def __init__(self, cond, s, rdlo, rdhi, rm, rs):
 		self.cond = cond
 		self.s = s
@@ -674,7 +847,11 @@ class STRH(instruction):
 	pass
 
 class SUB(instruction):
-	"""SUB{cond}{S} <Rd>, <Rn>, <shifter_operand>"""
+	"""
+	SUB{cond}{S} <Rd>, <Rn>, <shifter_operand>
+	
+	Subtract.
+	"""
 	def execute(self, registers):
 		if self.cond(registers):
 			rm = self.shifter_operand.apply(registers)
@@ -697,7 +874,11 @@ class SWPB(instruction):
 	pass
 
 class TEQ(instruction):
-	"""TEQ{cond} <Rn>, <shifter_operand>"""
+	"""
+	TEQ{cond} <Rn>, <shifter_operand>
+	
+	Compare using EOR.
+	"""
 	def __init__(self, cond, rn, shifter_operand):
 		self.cond = cond
 		self.rn = rn
@@ -715,7 +896,11 @@ class TEQ(instruction):
 			(self.cond.__name__, str(self.rn), str(self.shifter_operand))
 
 class TST(instruction):
-	"""TST{cond} <Rn>, <shifter_operand>"""
+	"""
+	TST{cond} <Rn>, <shifter_operand>
+	
+	Compare using AND.
+	"""
 	def __init__(self, cond, rn, shifter_operand):
 		self.cond = cond
 		self.rn = rn
@@ -733,7 +918,11 @@ class TST(instruction):
 			(self.cond.__name__, str(self.rn), str(self.shifter_operand))
 
 class UMLAL(instruction):
-	"""UMLAL{cond}{S} <RdLo>, <RdHi>, <Rm>, <Rs>"""
+	"""
+	UMLAL{cond}{S} <RdLo>, <RdHi>, <Rm>, <Rs>
+	
+	Unsigned multiply long with accumulate.
+	"""
 	def __init__(self, cond, s, rdlo, rdhi, rm, rs):
 		self.cond = cond
 		self.s = s
@@ -758,7 +947,11 @@ class UMLAL(instruction):
 				(self.cond.__name__, "S" if self.s else "", self.rdlo, self.rdhi, str(self.rm), str(self.rs))
 
 class UMULL(instruction):
-	"""UMULL{cond}{S} <RdLo>, <RdHi>, <Rm>, <Rs>"""
+	"""
+	UMULL{cond}{S} <RdLo>, <RdHi>, <Rm>, <Rs>
+	
+	Unsigned multiply long.
+	"""
 	def __init__(self, cond, s, rdlo, rdhi, rm, rs):
 		self.cond = cond
 		self.s = s

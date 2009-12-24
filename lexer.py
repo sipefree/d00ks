@@ -35,6 +35,7 @@ reserved = [
 	'ASR',
 	'B',
 	'BIC',
+	'BKPT',
 	'BX',
 	'CMN',
 	'CMP',
@@ -105,6 +106,7 @@ reserved = [
 	'DCB',
 	'DCW',
 	'DCH',
+	'SPACE',
 ]
 
 tokens = [
@@ -181,6 +183,7 @@ t_NOINIT = r'(noinit|NOINIT)'
 t_DCB = r'(dcb|DCB)'
 t_DCW = r'(dcw|DCW)'
 t_DCH = r'(dch|DCH)'
+t_SPACE = r'(space|SPACE)'
 
 t_ADC = r'(adc|ADC)'
 t_ADD = r'(add|ADD)'
@@ -188,6 +191,7 @@ t_AND = r'(and|AND)'
 t_ASR = r'(asr|ASR)'
 t_B = r'(b|B)'
 t_BIC = r'(bic|BIC)'
+t_BKPT = r'(bkpt|BKPT)'
 t_BX = r'(bx|BX)'
 t_CMN = r'(cmn|CMN)'
 t_CMP = r'(cmp|CMP)'

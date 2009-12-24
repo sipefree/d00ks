@@ -15,6 +15,10 @@
 # along with d00ks.  If not, see <http://www.gnu.org/licenses/>.
 ##########################################################################
 
+"""
+This file contains classes for dealing with memory
+in the ARM simulator.
+"""
 
 
 from ctypes import *
@@ -50,18 +54,23 @@ class DCB(store):
 
 class SPACE(store):
 	"""REpresents a SPACE operation"""
-	def __init__(self, size):
-		super(DCB, self).__init__()
-		self.size = size
+	def __init__(self, length):
+		super(SPACE, self).__init__()
+		self.length = length
 	def size(self):
-		return size
+		return self.length
 	def store(self, mem, addr):
-		for i in range(addr, addr + self.size):
-			mem.strb(addr, 0x0)
+		for i in range(addr, addr + self.length):
+			mem.strb(addr, 0xFF)
 			addr += 1
 
 class memory(object):
-	"""Represents the RAM of a program."""
+	"""
+	Represents the RAM of a program.
+	
+	Memory is stored using a byte buffer created
+	by the python ctypes module.
+	"""
 	def __init__(self, size=1024):
 		super(memory, self).__init__()
 		self.size = size
@@ -69,6 +78,9 @@ class memory(object):
 		self.startaddr = 0xA1000000
 	
 	def debug(self):
+		"""
+		Prints the contents of memory.
+		"""
 		buf = ""
 		for i in range(self.startaddr, self.startaddr + self.size):
 			if i % 32 == 0:
@@ -80,6 +92,10 @@ class memory(object):
 		print buf
 	
 	def realaddr(self, addr):
+		"""
+		Calculates the offset in the byte buffer
+		from a virtual address.
+		"""
 		real = addr - self.startaddr
 		if real >= self.size:
 			raise MemoryError("Out of bounds access at %i"%addr)
@@ -117,6 +133,7 @@ class memory(object):
 		return val
 	
 	def ldrh(self, addr):
+		"""Load halfword"""
 		if addr % 2 != 0:
 			raise MemoryError("Halfword reads must be halfword-aligned!")
 		addr = self.realaddr(addr)
@@ -124,6 +141,7 @@ class memory(object):
 		return val
 	
 	def ldrw(self, addr):
+		"""Load word"""
 		if addr % 4 != 0:
 			raise MemoryError("Word stores must be word-aligned!")
 		addr = self.realaddr(addr)

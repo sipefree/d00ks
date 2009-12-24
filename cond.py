@@ -16,6 +16,13 @@
 ##########################################################################
 
 
+"""
+This file contains condition functions which when given a set
+of registers will return whether or not the condition passes,
+given that conditions are based on the CPSR.
+"""
+
+
 def EQ(r):
 	"""Passes if zero flag is set."""
 	if r[r.CPSR] & r.Z:
