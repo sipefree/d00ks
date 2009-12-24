@@ -123,7 +123,7 @@ class program(object):
 		instr.execute(self.registers)
 		if self.registers.changed != [15] and debug:
 			self.registers.p()
-		self.registers.set_clean()
+			self.registers.set_clean()
 	
 	def run(self):
 		"""

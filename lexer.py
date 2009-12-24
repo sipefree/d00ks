@@ -34,6 +34,43 @@ reserved = [
 	'AND',
 	'ASR',
 	'B',
+	'BL',
+	'BAL',
+	'BCC',
+	'BCS',
+	'BEQ',
+	'BGE',
+	'BGT',
+	'BHI',
+	'BHS',
+	'BLE',
+	'BLO',
+	'BLS',
+	'BLT',
+	'BMI',
+	'BNE',
+	'BPL',
+	'BVC',
+	'BVS',
+	
+	'BLAL',
+	'BLCC',
+	'BLCS',
+	'BLEQ',
+	'BLGE',
+	'BLGT',
+	'BLHI',
+	'BLHS',
+	'BLLE',
+	'BLLO',
+	'BLLS',
+	'BLLT',
+	'BLMI',
+	'BLNE',
+	'BLPL',
+	'BLVC',
+	'BLVS',
+	
 	'BIC',
 	'BKPT',
 	'BX',
@@ -119,7 +156,6 @@ tokens = [
 	'IMMHEXTARGET',
 	'COMMENT',
 	'STATUS',
-	'LINK',
 	'OPENSQ',
 	'CLOSESQ',
 	'STRING',
@@ -163,12 +199,14 @@ def t_REGISTER(t):
 	t.value = instruction.reg(int(t.value[1:]))
 	return t
 
-
+t_B = r'(b|B)'
+t_BL = r'(bl|BL)'
 t_STATUS = r'(s|S)'
-t_LINK = r'(l|L)'
+
 t_SL = r'(sl|SL)'
 t_FP = r'(fp|FP)'
 t_IP = r'(ip|IP)'
+t_SP = r'(sp|SP)'
 t_LR = r'(lr|LR)'
 t_PC = r'(pc|PC)'
 
@@ -189,7 +227,44 @@ t_ADC = r'(adc|ADC)'
 t_ADD = r'(add|ADD)'
 t_AND = r'(and|AND)'
 t_ASR = r'(asr|ASR)'
-t_B = r'(b|B)'
+
+t_BAL = r'(bal|BAL)'
+t_BCC = r'(bcc|BCC)'
+t_BCS = r'(bcs|BCS)'
+t_BEQ = r'(beq|BEQ)'
+t_BGE = r'(bge|BGE)'
+t_BGT = r'(bgt|BGT)'
+t_BHI = r'(bhi|BHI)'
+t_BHS = r'(bhs|BHS)'
+t_BLE = r'(ble|BLE)'
+t_BLO = r'(blo|BLO)'
+t_BLS = r'(bls|BLS)'
+t_BLT = r'(blt|BLT)'
+t_BMI = r'(bmi|BMI)'
+t_BNE = r'(bne|BNE)'
+t_BPL = r'(bpl|BPL)'
+t_BVC = r'(bvc|BVC)'
+t_BVS = r'(bvs|BVS)'
+
+t_BLAL = r'(blal|BLAL)'
+t_BLCC = r'(blcc|BLCC)'
+t_BLCS = r'(blcs|BLCS)'
+t_BLEQ = r'(bleq|BLEQ)'
+t_BLGE = r'(blge|BLGE)'
+t_BLGT = r'(blgt|BLGT)'
+t_BLHI = r'(blhi|BLHI)'
+t_BLHS = r'(blhs|BLHS)'
+t_BLLE = r'(blle|BLLE)'
+t_BLLO = r'(bllo|BLLO)'
+t_BLLS = r'(blls|BLLS)'
+t_BLLT = r'(bllt|BLLT)'
+t_BLMI = r'(blmi|BLMI)'
+t_BLNE = r'(blne|BLNE)'
+t_BLPL = r'(blpl|BLPL)'
+t_BLVC = r'(blvc|BLVC)'
+t_BLVS = r'(blvs|BLVS)'
+
+
 t_BIC = r'(bic|BIC)'
 t_BKPT = r'(bkpt|BKPT)'
 t_BX = r'(bx|BX)'

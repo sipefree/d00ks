@@ -16,69 +16,72 @@
 ##########################################################################
 
 
+print "COMPILING PARSER..."
+from parser import *
 
-from register import *
-from cond import *
-from instruction import *
-from simulator import *
+prog = """
+AREA Primes, CODE, READONLY
 
-# instrs = [
-# MOV(AL, False, 1, shifter(num(0xF))),
-# ADD(AL, True, 0, argument(True, 1), shifter(num(0xF))),
-# 
-# MOV(AL, False, 1, shifter(num(0x0))),
-# ADD(AL, True, 0, argument(True, 1), shifter(num(0x0))),
-# 
-# MOV(AL, False, 1, shifter(num(0xFFFFFFFF))),
-# ADD(AL, True, 0, argument(True, 1), shifter(num(0x1))),
-# 
-# MOV(AL, False, 1, shifter(num(0xD0000000))),
-# ADD(AL, True, 0, argument(True, 1), shifter(num(0x10000000))),
-# 
-# MOV(AL, False, 1, shifter(num(0xF0000000))),
-# ADD(AL, True, 0, argument(True, 1), shifter(num(0x10000001))),
-# 
-# MOV(AL, False, 1, shifter(num(0xF0000000))),
-# ADD(AL, True, 0, argument(True, 1), shifter(num(0xD0000000))),
-# 
-# MOV(AL, False, 1, shifter(num(0x40000000))),
-# ADD(AL, True, 0, argument(True, 1), shifter(num(0x40000000))),
-# ]
+start
+	MOV R5, #1
+	MOV R6, #0
+loop
+	CMP R5, #1000
+	BGE stop
+	MOV R0, R5
+	MOV R1, #3
+	BL divmod
+	CMP R0, #0
+	BEQ win
+	MOV R0, R5
+	MOV R1, #5
+	BL divmod
+	CMP R0, #0
+	BEQ win
+	B next
+win
+	ADD R6, R6, R5
+next
+	ADD R5, R5, #1
+	B loop
 
-# instrs = [
-# MOV(AL, False, 1, shifter(num(0x34FD1A82))),
-# MOV(AL, False, 0, shifter(num(0x44810FA1))),
-# MOV(AL, False, 3, shifter(num(0x4DC3A734))),
-# MOV(AL, False, 2, shifter(num(0x277D1B90))),
-# SUB(AL, True, 5, argument(True, 0), shifter(argument(True, 2))),
-# SBC(AL, False, 4, argument(True, 1), shifter(argument(True, 3))),
-# ]
+; stores quotient in R1, remainder in R0
+divmod
+	MOV R3, #0
+divmod_while
+	CMP R1, #0
+	BEQ divmod_err
+	CMP R0, R1
+	BLT divmod_done
+	ADD R3, R3, #1
+	SUB R0, R0, R1
+	B divmod_while
+divmod_err
+	MOV R3, #0xFFFFFFFF
+divmod_done
+	MOV R1, R3
+	MOV PC, LR
 
-instrs = [
-# load a test value into R1
-# MOV R1, #0xAC
-MOV(AL, False, 1, shifter(num(0xAC))),
 
-# AND R2, R1, #0x1
-AND(AL, False, 2, R1, shifter(num(0x1))),
-# MOV R0, R2, LSL #2
-MOV(AL, False, 0, LSL(R2, num(2))),
+stop B stop
 
-# AND R2, R1, #0xE
-AND(AL, False, 2, R1, shifter(num(0xE))),
-# ORR R0, R0, R2, LSL #3
-ORR(AL, False, 0, R0, LSL(R2, num(3))),
+"""
 
-# AND R2, R1, #0xF0
-AND(AL, False, 2, R1, shifter(num(0xF0))),
-# ORR R0, R0, R2, LSL #4
-ORR(AL, False, 0, R0, LSL(R2, num(4))),
+print "INPUT:"
+i = 1
+for line in prog.split("\n"):
+	print "%i %s"%(i, line)
+	i = i + 1
+print ""
+print "COMPILING."
 
-# end B end
-B(False, AL, target(True, "end")),
-]
+import pprint
+pp = pprint.PrettyPrinter()
 
-prog = program(instrs)
+output = parser.parse(prog)
+pp.pprint(output)
 
-prog.registers.symbol_table["start"] = (0, instrs[0])
-prog.registers.symbol_table["end"] = (7, instrs[7])
+program = simulator.program()
+program.compile(output)
+
+program.debug()

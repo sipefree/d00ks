@@ -362,23 +362,31 @@ class instruction(object):
 	
 	def sign(self, value):
 		'What is the sign of value?'
-		ans = 1 if self.signed_pos(value) else -1
-		return 0 if value == 0 else ans
+		return 1 if self.signed_pos(value) else -1
 		
 	def carry_from(self, value):
 		'Is there carry in a 33 bit value?'
 		return 1 if value & (1 << 32) else 0
 	
-	def overflow_from(self, rn, rm, value):
+	def overflow_from(self, operation, rn, rm, value):
 		"""
-		Overflow occurs when the sign of the operands was
-		the same but the result of the computation has caused
-		the sign to change.
+		Overflow occurs when:
+			Addition:
+				Both operands have the same sign but the
+				result's sign is different.
+			Subtraction:
+				Both operands have different signs and
+				the sign of the first operand is the
+				same as the sign of the answer.
 		"""
-		if self.sign(rn) == self.sign(rm):
-			return self.sign(rn) != self.sign(value)
-		else:
-			return False
+		if operation == 1:
+			# addition
+			return self.sign(rn) == self.sign(rm) and self.sign(rn) != self.sign(value)
+		elif operation == 2:
+			return self.sign(rn) != self.sign(rm) and self.sign(rn) == self.sign(value)
+		
+		return False
+			
 	
 	def twos_compliment(self, value):
 		'Returns twos compliment of a value'
@@ -406,7 +414,7 @@ class ADC(instruction):
 				registers.flag_set(registers.N, tmp & (1 << 31))
 				registers.flag_set(registers.Z, registers[self.rd] == 0)
 				registers.flag_set(registers.C, self.carry_from(tmp))
-				registers.flag_set(registers.V, self.overflow_from(rm, self.rn.get(registers), tmp))
+				registers.flag_set(registers.V, self.overflow_from(1, rm, self.rn.get(registers), tmp))
 
 	def __str__(self):
 		return "ADC%s%s R%i, %s, %s"%\
@@ -427,7 +435,7 @@ class ADD(instruction):
 				registers.flag_set(registers.N, tmp & (1 << 31))
 				registers.flag_set(registers.Z, registers[self.rd] == 0)
 				registers.flag_set(registers.C, self.carry_from(tmp))
-				registers.flag_set(registers.V, self.overflow_from(rm, self.rn.get(registers), tmp))
+				registers.flag_set(registers.V, self.overflow_from(1, rm, self.rn.get(registers), tmp))
 	def __str__(self):
 		return "ADD%s%s R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
@@ -467,12 +475,12 @@ class B(instruction):
 	def execute(self, registers):
 		if self.cond(registers):
 			if self.link:
-				registers[registers.LR] = registers[registers.PC]+1
+				registers[registers.LR] = registers[registers.PC]
 			registers[registers.PC] = self.target.get(registers)
 
 	def __str__(self):
-		return "B%s %s"%\
-			("L" if self.link else "", str(self.target))
+		return "B%s%s %s"%\
+			("L" if self.link else "", self.cond.__name__, str(self.target))
 	
 class BIC(instruction):
 	"""
@@ -526,7 +534,7 @@ class CMN(instruction):
 			registers.flag_set(registers.N, alu_out & (1 << 31))
 			registers.flag_set(registers.Z, (alu_out & 0xFFFFFFFF) == 0) # force 32 bit mode
 			registers.flag_set(registers.C, self.carry_from(alu_out))
-			registers.flag_set(registers.V, self.overflow_from(self.rn.get(registers), rm, alu_out))
+			registers.flag_set(registers.V, self.overflow_from(1, self.rn.get(registers), rm, alu_out))
 
 	def __str__(self):
 		return "CMN%s %s, %s"%\
@@ -551,7 +559,7 @@ class CMP(instruction):
 			registers.flag_set(registers.N, alu_out & (1 << 31))
 			registers.flag_set(registers.Z, (alu_out & 0xFFFFFFFF) == 0) # force 32 bit mode
 			registers.flag_set(registers.C, alu_out >= 0)
-			registers.flag_set(registers.V, self.overflow_from(self.rn.get(registers), rm, alu_out))
+			registers.flag_set(registers.V, self.overflow_from(-1, self.rn.get(registers), rm, alu_out))
 			
 	def __str__(self):
 		return "CMP%s %s, %s"%\
@@ -732,7 +740,7 @@ class RSB(instruction):
 				registers.flag_set(registers.N, tmp & (1 << 31))
 				registers.flag_set(registers.Z, registers[self.rd] == 0)
 				registers.flag_set(registers.C, self.carry_from(tmp))
-				registers.flag_set(registers.V, self.overflow_from(rm, self.rn.get(registers), tmp))
+				registers.flag_set(registers.V, self.overflow_from(-1, rm, self.rn.get(registers), tmp))
 
 	def __str__(self):
 		return "RSB%s%s R%i, %s, %s"%\
@@ -753,7 +761,7 @@ class RSC(instruction):
 				registers.flag_set(registers.N, tmp & (1 << 31))
 				registers.flag_set(registers.Z, registers[self.rd] == 0)
 				registers.flag_set(registers.C, registers[self.rd] >= 0)
-				registers.flag_set(registers.V, self.overflow_from(rm, self.rn.get(registers), tmp))
+				registers.flag_set(registers.V, self.overflow_from(-1, rm, self.rn.get(registers), tmp))
 
 	def __str__(self):
 		return "RSC%s%s R%i, %s, %s"%\
@@ -774,7 +782,7 @@ class SBC(instruction):
 				registers.flag_set(registers.N, tmp & (1 << 31))
 				registers.flag_set(registers.Z, registers[self.rd] == 0)
 				registers.flag_set(registers.C, registers[self.rd] >= 0)
-				registers.flag_set(registers.V, self.overflow_from(rm, self.rn.get(registers), tmp))
+				registers.flag_set(registers.V, self.overflow_from(-1, rm, self.rn.get(registers), tmp))
 
 	def __str__(self):
 		return "SBC%s%s R%i, %s, %s"%\
@@ -861,7 +869,7 @@ class SUB(instruction):
 				registers.flag_set(registers.N, tmp & (1 << 31))
 				registers.flag_set(registers.Z, registers[self.rd] == 0)
 				registers.flag_set(registers.C, tmp >= 0)
-				registers.flag_set(registers.V, self.overflow_from(rm, self.rn.get(registers), tmp))
+				registers.flag_set(registers.V, self.overflow_from(-1, rm, self.rn.get(registers), tmp))
 				
 	def __str__(self):
 		return "SUB%s%s R%i, %s, %s"%\

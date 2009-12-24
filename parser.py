@@ -118,28 +118,137 @@ def p_andc(p):
 	p[0] = (p[1], p[2], False)
 
 ######
-# B
+# BRANCH
 ######
-def p_brk(p):
+def p_brch(p):
 	'command : b_cmd branchtarget'
 	(cmd, con, l) = p[1]
 	p[0] = instruction.B(l, con, p[2])
 
-def p_brk_(p):
+def p_brch_al(p):
+	'b_cmd : BAL'
+	p[0] = (p[1], cond.AL, False)
+def p_brch_cc(p):
+	'b_cmd : BCC'
+	p[0] = (p[1], cond.CC, False)
+def p_brch_cs(p):
+	'b_cmd : BCS'
+	p[0] = (p[1], cond.CS, False)
+def p_brch_eq(p):
+	'b_cmd : BEQ'
+	p[0] = (p[1], cond.EQ, False)
+def p_brch_ge(p):
+	'b_cmd : BGE'
+	p[0] = (p[1], cond.GE, False)
+def p_brch_gt(p):
+	'b_cmd : BGT'
+	p[0] = (p[1], cond.GT, False)
+def p_brch_hi(p):
+	'b_cmd : BHI'
+	p[0] = (p[1], cond.HI, False)
+def p_brch_hs(p):
+	'b_cmd : BHS'
+	p[0] = (p[1], cond.HS, False)
+def p_brch_le(p):
+	'b_cmd : BLE'
+	p[0] = (p[1], cond.LE, False)
+def p_brch_lo(p):
+	'b_cmd : BLO'
+	p[0] = (p[1], cond.LO, False)
+def p_brch_ls(p):
+	'b_cmd : BLS'
+	p[0] = (p[1], cond.LS, False)
+def p_brch_lt(p):
+	'b_cmd : BLT'
+	p[0] = (p[1], cond.LT, False)
+def p_brch_mi(p):
+	'b_cmd : BMI'
+	p[0] = (p[1], cond.MI, False)
+def p_brch_ne(p):
+	'b_cmd : BNE'
+	p[0] = (p[1], cond.NE, False)
+def p_brch_pl(p):
+	'b_cmd : BPL'
+	p[0] = (p[1], cond.PL, False)
+def p_brch_vc(p):
+	'b_cmd : BVC'
+	p[0] = (p[1], cond.VC, False)
+def p_brch_vs(p):
+	'b_cmd : BVS'
+	p[0] = (p[1], cond.VS, False)
+def p_brch_(p):
 	'b_cmd : B'
 	p[0] = (p[1], cond.AL, False)
 
-def p_brklc(p):
-	'b_cmd : B LINK condition'
-	p[0] = (p[1], p[3], True)
 
-def p_brkc(p):
-	'b_cmd : B condition'
-	p[0] = (p[1], p[2], False)
+######
+# BRANCH-LINK
+######
 
-def p_brkl(p):
-	'b_cmd : B LINK'
-	p[0] = (p[1], cond.AL, True)	
+def p_brchl_al(p):
+	'b_cmd : BLAL'
+	p[0] = (p[1], cond.AL, True)
+def p_brchl_cc(p):
+	'b_cmd : BLCC'
+	p[0] = (p[1], cond.CC, True)
+def p_brchl_cs(p):
+	'b_cmd : BLCS'
+	p[0] = (p[1], cond.CS, True)
+def p_brchl_eq(p):
+	'b_cmd : BLEQ'
+	p[0] = (p[1], cond.EQ, True)
+def p_brchl_ge(p):
+	'b_cmd : BLGE'
+	p[0] = (p[1], cond.GE, True)
+def p_brchl_gt(p):
+	'b_cmd : BLGT'
+	p[0] = (p[1], cond.GT, True)
+def p_brchl_hi(p):
+	'b_cmd : BLHI'
+	p[0] = (p[1], cond.HI, True)
+def p_brchl_hs(p):
+	'b_cmd : BLHS'
+	p[0] = (p[1], cond.HS, True)
+def p_brchl_le(p):
+	'b_cmd : BLLE'
+	p[0] = (p[1], cond.LE, True)
+def p_brchl_lo(p):
+	'b_cmd : BLLO'
+	p[0] = (p[1], cond.LO, True)
+def p_brchl_ls(p):
+	'b_cmd : BLLS'
+	p[0] = (p[1], cond.LS, True)
+def p_brchl_lt(p):
+	'b_cmd : BLLT'
+	p[0] = (p[1], cond.LT, True)
+def p_brchl_mi(p):
+	'b_cmd : BLMI'
+	p[0] = (p[1], cond.MI, True)
+def p_brchl_ne(p):
+	'b_cmd : BLNE'
+	p[0] = (p[1], cond.NE, True)
+def p_brchl_pl(p):
+	'b_cmd : BLPL'
+	p[0] = (p[1], cond.PL, True)
+def p_brchl_vc(p):
+	'b_cmd : BLVC'
+	p[0] = (p[1], cond.VC, True)
+def p_brchl_vs(p):
+	'b_cmd : BLVS'
+	p[0] = (p[1], cond.VS, True)
+def p_brchl_(p):
+	'b_cmd : BL'
+	p[0] = (p[1], cond.AL, True)
+
+
+#def p_brchlc(p):
+#	'b_cmd : B LINK condition'
+#	p[0] = (p[1], p[3], True)
+
+
+#def p_brchl(p):
+#	'b_cmd : B LINK'
+#	p[0] = (p[1], cond.AL, True)	
 	
 ######
 # BIC
@@ -196,48 +305,35 @@ def p_bkpt(p):
 ######
 def p_cmn(p):
 	'command : cmn_cmd argument shifter'
-	(cmd, con, s) = p[1]
-	p[0] = instruction.CMN(con, s, p[2].value, p[3])
+	(cmd, con, _) = p[1]
+	p[0] = instruction.CMN(con, p[2].value, p[3])
+
+def p_cmnc(p):
+	'cmn_cmd : CMN condition'
+	p[0] = (p[1], p[2], False)
 
 def p_cmn_(p):
 	'cmn_cmd : CMN'
 	p[0] = (p[1], cond.AL, False)
 
-def p_cmns(p):
-	'cmn_cmd : CMN STATUS'
-	p[0] = (p[1], cond.AL, True)
 
-def p_cmncs(p):
-	'cmn_cmd :  CMN condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_cmnc(p):
-	'cmn_cmd : CMN condition'
-	p[0] = (p[1], p[2], False)
 
 ######
 # CMP
 ######
 def p_cmp(p):
 	'command : cmp_cmd argument shifter'
-	(cmd, con, s) = p[1]
-	p[0] = instruction.CMP(con, s, p[2].value, p[3])
+	(cmd, con, _) = p[1]
+	p[0] = instruction.CMP(con, p[2], p[3])
+
+def p_cmpc(p):
+	'cmp_cmd : CMP condition'
+	p[0] = (p[1], p[2], False)
 
 def p_cmp_(p):
 	'cmp_cmd : CMP'
 	p[0] = (p[1], cond.AL, False)
 
-def p_cmps(p):
-	'cmp_cmd : CMP STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_cmpcs(p):
-	'cmp_cmd :  CMP condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_cmpc(p):
-	'cmp_cmd : CMP condition'
-	p[0] = (p[1], p[2], False)
 
 
 # ######
@@ -562,20 +658,12 @@ def p_subc(p):
 ######
 def p_teq(p):
 	'command : teq_cmd argument shifter'
-	(cmd, con, s) = p[1]
-	p[0] = instruction.TEQ(con, s, p[2].value, p[3])
+	(cmd, con, _) = p[1]
+	p[0] = instruction.TEQ(con, p[2].value, p[3])
 
 def p_teq_(p):
 	'teq_cmd : TEQ'
 	p[0] = (p[1], cond.AL, False)
-
-def p_teqs(p):
-	'teq_cmd : TEQ STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_teqcs(p):
-	'teq_cmd :  TEQ condition STATUS'
-	p[0] = (p[1], p[2], True)
 
 def p_teqc(p):
 	'teq_cmd : TEQ condition'
@@ -586,20 +674,12 @@ def p_teqc(p):
 ######
 def p_tst(p):
 	'command : tst_cmd argument shifter'
-	(cmd, con, s) = p[1]
-	p[0] = instruction.TST(con, s, p[2].value, p[3])
+	(cmd, con, _) = p[1]
+	p[0] = instruction.TST(con, p[2].value, p[3])
 
 def p_tst_(p):
 	'tst_cmd : TST'
 	p[0] = (p[1], cond.AL, False)
-
-def p_tsts(p):
-	'tst_cmd : TST STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_tstcs(p):
-	'tst_cmd :  TST condition STATUS'
-	p[0] = (p[1], p[2], True)
 
 def p_tstc(p):
 	'tst_cmd : TST condition'
@@ -745,6 +825,18 @@ def p_argument_i(p):
 def p_argument_r(p):
 	'argument : REGISTER'
 	p[0] = p[1]
+
+def p_argument_sp(p):
+	'argument : SP'
+	p[0] = instruction.reg(13)
+
+def p_argument_lr(p):
+	'argument : LR'
+	p[0] = instruction.reg(14)
+
+def p_argument_pc(p):
+	'argument : PC'
+	p[0] = instruction.reg(15)
 
 #############
 # condition
@@ -917,42 +1009,7 @@ def p_error(p):
 
 parser = yacc.yacc()
 
-prog = simulator.program()
 
-prog = """
-AREA MemTest, CODE, READONLY
-
-start
-	MOV R0, #1
-	MOV R1, #0x40
-	ADD R2, R0, R0
-stop B stop
-
-AREA Strings, DATA, READWRITE
-
-string1 DCB "hello world",0,"test",0
-string2 SPACE 128
-"""
-
-print "INPUT >>>"
-i = 1
-for line in prog.split("\n"):
-	print "%i %s"%(i, line)
-	i = i + 1
-print ""
-print "COMPILING >>>"
-
-import pprint
-pp = pprint.PrettyPrinter()
-
-
-output = parser.parse(prog)
-pp.pprint(output)
-
-program = simulator.program()
-program.compile(output)
-
-program.debug()
 
 
 
