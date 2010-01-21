@@ -49,230 +49,43 @@ def p_directivecmd(p):
 # ADC
 ######
 def p_adc(p):
-	'command : adc_cmd argument argument shifter'
-	(cmd, con, s) = p[1]
+	'command : ADC argument argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.ADC(con, s, p[2].value, p[3], p[4])
-
-def p_adc_(p):
-	'adc_cmd : ADC'
-	p[0] = (p[1], cond.AL, False)
-
-def p_adcs(p):
-	'adc_cmd : ADC STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_adccs(p):
-	'adc_cmd :  ADC condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_adcc(p):
-	'adc_cmd : ADC condition'
-	p[0] = (p[1], p[2], False)
 
 ######
 # ADD
 ######
 def p_add(p):
-	'command : add_cmd argument argument shifter'
-	(cmd, con, s) = p[1]
+	'command : ADD argument argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.ADD(con, s, p[2].value, p[3], p[4])
-
-def p_add_(p):
-	'add_cmd : ADD'
-	p[0] = (p[1], cond.AL, False)
-
-def p_adds(p):
-	'add_cmd : ADD STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_addcs(p):
-	'add_cmd :  ADD condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_addc(p):
-	'add_cmd : ADD condition'
-	p[0] = (p[1], p[2], False)
 
 ######
 # AND
 ######
 def p_and(p):
-	'command : and_cmd argument argument shifter'
-	(cmd, con, s) = p[1]
+	'command : AND argument argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.AND(con, s, p[2].value, p[3], p[4])
 
-def p_and_(p):
-	'and_cmd : AND'
-	p[0] = (p[1], cond.AL, False)
-
-def p_ands(p):
-	'and_cmd : AND STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_andcs(p):
-	'and_cmd :  AND condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_andc(p):
-	'and_cmd : AND condition'
-	p[0] = (p[1], p[2], False)
 
 ######
 # BRANCH
 ######
 def p_brch(p):
-	'command : b_cmd branchtarget'
-	(cmd, con, l) = p[1]
-	p[0] = instruction.B(l, con, p[2])
-
-def p_brch_al(p):
-	'b_cmd : BAL'
-	p[0] = (p[1], cond.AL, False)
-def p_brch_cc(p):
-	'b_cmd : BCC'
-	p[0] = (p[1], cond.CC, False)
-def p_brch_cs(p):
-	'b_cmd : BCS'
-	p[0] = (p[1], cond.CS, False)
-def p_brch_eq(p):
-	'b_cmd : BEQ'
-	p[0] = (p[1], cond.EQ, False)
-def p_brch_ge(p):
-	'b_cmd : BGE'
-	p[0] = (p[1], cond.GE, False)
-def p_brch_gt(p):
-	'b_cmd : BGT'
-	p[0] = (p[1], cond.GT, False)
-def p_brch_hi(p):
-	'b_cmd : BHI'
-	p[0] = (p[1], cond.HI, False)
-def p_brch_hs(p):
-	'b_cmd : BHS'
-	p[0] = (p[1], cond.HS, False)
-def p_brch_le(p):
-	'b_cmd : BLE'
-	p[0] = (p[1], cond.LE, False)
-def p_brch_lo(p):
-	'b_cmd : BLO'
-	p[0] = (p[1], cond.LO, False)
-def p_brch_ls(p):
-	'b_cmd : BLS'
-	p[0] = (p[1], cond.LS, False)
-def p_brch_lt(p):
-	'b_cmd : BLT'
-	p[0] = (p[1], cond.LT, False)
-def p_brch_mi(p):
-	'b_cmd : BMI'
-	p[0] = (p[1], cond.MI, False)
-def p_brch_ne(p):
-	'b_cmd : BNE'
-	p[0] = (p[1], cond.NE, False)
-def p_brch_pl(p):
-	'b_cmd : BPL'
-	p[0] = (p[1], cond.PL, False)
-def p_brch_vc(p):
-	'b_cmd : BVC'
-	p[0] = (p[1], cond.VC, False)
-def p_brch_vs(p):
-	'b_cmd : BVS'
-	p[0] = (p[1], cond.VS, False)
-def p_brch_(p):
-	'b_cmd : B'
-	p[0] = (p[1], cond.AL, False)
+	'command : B branchtarget'
+	(ins, con, s, other) = p[1]
+	p[0] = instruction.B(other, con, p[2])
 
 
-######
-# BRANCH-LINK
-######
-
-def p_brchl_al(p):
-	'b_cmd : BLAL'
-	p[0] = (p[1], cond.AL, True)
-def p_brchl_cc(p):
-	'b_cmd : BLCC'
-	p[0] = (p[1], cond.CC, True)
-def p_brchl_cs(p):
-	'b_cmd : BLCS'
-	p[0] = (p[1], cond.CS, True)
-def p_brchl_eq(p):
-	'b_cmd : BLEQ'
-	p[0] = (p[1], cond.EQ, True)
-def p_brchl_ge(p):
-	'b_cmd : BLGE'
-	p[0] = (p[1], cond.GE, True)
-def p_brchl_gt(p):
-	'b_cmd : BLGT'
-	p[0] = (p[1], cond.GT, True)
-def p_brchl_hi(p):
-	'b_cmd : BLHI'
-	p[0] = (p[1], cond.HI, True)
-def p_brchl_hs(p):
-	'b_cmd : BLHS'
-	p[0] = (p[1], cond.HS, True)
-def p_brchl_le(p):
-	'b_cmd : BLLE'
-	p[0] = (p[1], cond.LE, True)
-def p_brchl_lo(p):
-	'b_cmd : BLLO'
-	p[0] = (p[1], cond.LO, True)
-def p_brchl_ls(p):
-	'b_cmd : BLLS'
-	p[0] = (p[1], cond.LS, True)
-def p_brchl_lt(p):
-	'b_cmd : BLLT'
-	p[0] = (p[1], cond.LT, True)
-def p_brchl_mi(p):
-	'b_cmd : BLMI'
-	p[0] = (p[1], cond.MI, True)
-def p_brchl_ne(p):
-	'b_cmd : BLNE'
-	p[0] = (p[1], cond.NE, True)
-def p_brchl_pl(p):
-	'b_cmd : BLPL'
-	p[0] = (p[1], cond.PL, True)
-def p_brchl_vc(p):
-	'b_cmd : BLVC'
-	p[0] = (p[1], cond.VC, True)
-def p_brchl_vs(p):
-	'b_cmd : BLVS'
-	p[0] = (p[1], cond.VS, True)
-def p_brchl_(p):
-	'b_cmd : BL'
-	p[0] = (p[1], cond.AL, True)
-
-
-#def p_brchlc(p):
-#	'b_cmd : B LINK condition'
-#	p[0] = (p[1], p[3], True)
-
-
-#def p_brchl(p):
-#	'b_cmd : B LINK'
-#	p[0] = (p[1], cond.AL, True)	
-	
 ######
 # BIC
 ######
 def p_bic(p):
-	'command : bic_cmd argument argument shifter'
-	(cmd, con, s) = p[1]
+	'command : BIC argument argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.BIC(con, s, p[2].value, p[3], p[4])
-
-def p_bic_(p):
-	'bic_cmd : BIC'
-	p[0] = (p[1], cond.AL, False)
-
-def p_bics(p):
-	'bic_cmd : BIC STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_biccs(p):
-	'bic_cmd :  BIC condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_bicc(p):
-	'bic_cmd : BIC condition'
-	p[0] = (p[1], p[2], False)
 
 
 ######
@@ -304,17 +117,10 @@ def p_bkpt(p):
 # CMN
 ######
 def p_cmn(p):
-	'command : cmn_cmd argument shifter'
-	(cmd, con, _) = p[1]
+	'command : CMN argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.CMN(con, p[2].value, p[3])
 
-def p_cmnc(p):
-	'cmn_cmd : CMN condition'
-	p[0] = (p[1], p[2], False)
-
-def p_cmn_(p):
-	'cmn_cmd : CMN'
-	p[0] = (p[1], cond.AL, False)
 
 
 
@@ -322,17 +128,10 @@ def p_cmn_(p):
 # CMP
 ######
 def p_cmp(p):
-	'command : cmp_cmd argument shifter'
-	(cmd, con, _) = p[1]
+	'command : CMP argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.CMP(con, p[2], p[3])
 
-def p_cmpc(p):
-	'cmp_cmd : CMP condition'
-	p[0] = (p[1], p[2], False)
-
-def p_cmp_(p):
-	'cmp_cmd : CMP'
-	p[0] = (p[1], cond.AL, False)
 
 
 
@@ -358,347 +157,44 @@ def p_cmp_(p):
 # EOR
 ######
 def p_eor(p):
-	'command : eor_cmd argument argument shifter'
-	(cmd, con, s) = p[1]
+	'command : EOR argument argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.EOR(con, s, p[2].value, p[3], p[4])
-
-def p_eor_(p):
-	'eor_cmd : EOR'
-	p[0] = (p[1], cond.AL, False)
-
-def p_eors(p):
-	'eor_cmd : EOR STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_eorcs(p):
-	'eor_cmd :  EOR condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_eorc(p):
-	'bic_cmd : EOR condition'
-	p[0] = (p[1], p[2], False)
-
 
 ######
 # LDR
 ######
 def p_ldr(p):
-	'command : ldr_cmd argument addrmode'
-	(cmd, con) = p[1]
-	p[0] = instruction.LDR(con, p[2].value, p[3])
+	'command : LDR argument addrmode'
+	(ins, con, s, other) = p[1]
+	if other == False:
+		p[0] = instruction.LDR(con, p[2].value, p[3])
+	elif other == "B":
+		p[0] = instruction.LDRB(con, p[2].value, p[3])
+	elif other == "SB":
+		p[0] = instruction.LDRSB(con, p[2].value, p[3])
+	elif other == "H":
+		p[0] = instruction.LDRH(con, p[2].value, p[3])
+	elif other =="SH":
+		p[0] = instruction.LDRSH(con, p[2].value, p[3])
 
-def p_ldrc(p):
-	'ldr_cmd : LDR condition'
-	p[0] = (p[1], p[2])
-
-def p_ldr_(p):
-	'ldr_cmd : LDR'
-	p[0] = (p[1], cond.AL)
-
-#######
-## LDRB
-#######
-
-def p_ldrb(p):
-	'command : ldrb_cmd argument addrmode'
-	(cmd, con) = p[1]
-	p[0] = instruction.LDRB(con, p[2].value, p[3])
-
-def p_ldrb_al(p):
-	'ldrb_cmd : LDRALB'
-	p[0] = (p[1], cond.AL)
-def p_ldrb_cc(p):        
-	'ldrb_cmd : LDRCCB'  
-	p[0] = (p[1], cond.CC)
-def p_ldrb_cs(p):        
-	'ldrb_cmd : LDRCSB'  
-	p[0] = (p[1], cond.CS)
-def p_ldrb_eq(p):        
-	'ldrb_cmd : LDREQB'  
-	p[0] = (p[1], cond.EQ)
-def p_ldrb_ge(p):        
-	'ldrb_cmd : LDRGEB'  
-	p[0] = (p[1], cond.GE)
-def p_ldrb_gt(p):        
-	'ldrb_cmd : LDRGTB'  
-	p[0] = (p[1], cond.GT)
-def p_ldrb_hi(p):        
-	'ldrb_cmd : LDRHIB'  
-	p[0] = (p[1], cond.HI)
-def p_ldrb_hs(p):        
-	'ldrb_cmd : LDRHSB'  
-	p[0] = (p[1], cond.HS)
-def p_ldrb_le(p):        
-	'ldrb_cmd : LDRLEB'  
-	p[0] = (p[1], cond.LE)
-def p_ldrb_lo(p):        
-	'ldrb_cmd : LDRLOB'  
-	p[0] = (p[1], cond.LO)
-def p_ldrb_ls(p):        
-	'ldrb_cmd : LDRLSB'  
-	p[0] = (p[1], cond.LS)
-def p_ldrb_lt(p):        
-	'ldrb_cmd : LDRLTB'  
-	p[0] = (p[1], cond.LT)
-def p_ldrb_mi(p):        
-	'ldrb_cmd : LDRMIB'  
-	p[0] = (p[1], cond.MI)
-def p_ldrb_ne(p):        
-	'ldrb_cmd : LDRNEB'  
-	p[0] = (p[1], cond.NE)
-def p_ldrb_pl(p):        
-	'ldrb_cmd : LDRPLB'  
-	p[0] = (p[1], cond.PL)
-def p_ldrb_vc(p):        
-	'ldrb_cmd : LDRVCB'  
-	p[0] = (p[1], cond.VC)
-def p_ldrb_vs(p):        
-	'ldrb_cmd : LDRVSB'  
-	p[0] = (p[1], cond.VS)
-def p_ldrb_(p):          
-	'ldrb_cmd : LDRB'    
-	p[0] = (p[1], cond.AL)
-	
-#######
-## LDRSB
-#######
-
-def p_ldrsb_tar(p):
-	'command : ldrsb_cmd argument addrmode'
-	(cmd, con) = p[1]
-	p[0] = instruction.LDRSB(con, p[2].value, p[3])
-
-
-def p_ldrsb_al(p):
-	'ldrsb_cmd : LDRALSB'
-	p[0] = (p[1], cond.AL)
-def p_ldrsb_cc(p):        
-	'ldrsb_cmd : LDRCCSB'  
-	p[0] = (p[1], cond.CC)
-def p_ldrsb_cs(p):        
-	'ldrsb_cmd : LDRCSSB'  
-	p[0] = (p[1], cond.CS)
-def p_ldrsb_eq(p):        
-	'ldrsb_cmd : LDREQSB'  
-	p[0] = (p[1], cond.EQ)
-def p_ldrsb_ge(p):        
-	'ldrsb_cmd : LDRGESB'  
-	p[0] = (p[1], cond.GE)
-def p_ldrsb_gt(p):        
-	'ldrsb_cmd : LDRGTSB'  
-	p[0] = (p[1], cond.GT)
-def p_ldrsb_hi(p):        
-	'ldrsb_cmd : LDRHISB'  
-	p[0] = (p[1], cond.HI)
-def p_ldrsb_hs(p):        
-	'ldrsb_cmd : LDRHSSB'  
-	p[0] = (p[1], cond.HS)
-def p_ldrsb_le(p):        
-	'ldrsb_cmd : LDRLESB'  
-	p[0] = (p[1], cond.LE)
-def p_ldrsb_lo(p):        
-	'ldrsb_cmd : LDRLOSB'  
-	p[0] = (p[1], cond.LO)
-def p_ldrsb_ls(p):        
-	'ldrsb_cmd : LDRLSSB'  
-	p[0] = (p[1], cond.LS)
-def p_ldrsb_lt(p):        
-	'ldrsb_cmd : LDRLTSB'  
-	p[0] = (p[1], cond.LT)
-def p_ldrsb_mi(p):        
-	'ldrsb_cmd : LDRMISB'  
-	p[0] = (p[1], cond.MI)
-def p_ldrsb_ne(p):        
-	'ldrsb_cmd : LDRNESB'  
-	p[0] = (p[1], cond.NE)
-def p_ldrsb_pl(p):        
-	'ldrsb_cmd : LDRPLSB'  
-	p[0] = (p[1], cond.PL)
-def p_ldrsb_vc(p):        
-	'ldrsb_cmd : LDRVCSB'  
-	p[0] = (p[1], cond.VC)
-def p_ldrsb_vs(p):        
-	'ldrsb_cmd : LDRVSSB'  
-	p[0] = (p[1], cond.VS)
-def p_ldrsb_(p):          
-	'ldrsb_cmd : LDRSB'    
-	p[0] = (p[1], cond.AL)
-
-######
-# LDRH
-######
-
-def p_ldrh_tar(p):
-	'command : ldrh_cmd argument addrmode'
-	(cmd, con) = p[1]
-	p[0] = instruction.LDRH(con, p[2].value, p[3])
-
-def p_ldrh_al(p):
-	'ldrh_cmd : LDRALH'
-	p[0] = (p[1], cond.AL)
-def p_ldrh_cc(p):        
-	'ldrh_cmd : LDRCCH'  
-	p[0] = (p[1], cond.CC)
-def p_ldrh_cs(p):        
-	'ldrh_cmd : LDRCSH'  
-	p[0] = (p[1], cond.CS)
-def p_ldrh_eq(p):        
-	'ldrh_cmd : LDREQH'  
-	p[0] = (p[1], cond.EQ)
-def p_ldrh_ge(p):        
-	'ldrh_cmd : LDRGEH'  
-	p[0] = (p[1], cond.GE)
-def p_ldrh_gt(p):        
-	'ldrh_cmd : LDRGTH'  
-	p[0] = (p[1], cond.GT)
-def p_ldrh_hi(p):        
-	'ldrh_cmd : LDRHIH'  
-	p[0] = (p[1], cond.HI)
-def p_ldrh_hs(p):        
-	'ldrh_cmd : LDRHSH'  
-	p[0] = (p[1], cond.HS)
-def p_ldrh_le(p):        
-	'ldrh_cmd : LDRLEH'  
-	p[0] = (p[1], cond.LE)
-def p_ldrh_lo(p):        
-	'ldrh_cmd : LDRLOH'  
-	p[0] = (p[1], cond.LO)
-def p_ldrh_ls(p):        
-	'ldrh_cmd : LDRLSH'  
-	p[0] = (p[1], cond.LS)
-def p_ldrh_lt(p):        
-	'ldrh_cmd : LDRLTH'  
-	p[0] = (p[1], cond.LT)
-def p_ldrh_mi(p):        
-	'ldrh_cmd : LDRMIH'  
-	p[0] = (p[1], cond.MI)
-def p_ldrh_ne(p):        
-	'ldrh_cmd : LDRNEH'  
-	p[0] = (p[1], cond.NE)
-def p_ldrh_pl(p):        
-	'ldrh_cmd : LDRPLH'  
-	p[0] = (p[1], cond.PL)
-def p_ldrh_vc(p):        
-	'ldrh_cmd : LDRVCH'  
-	p[0] = (p[1], cond.VC)
-def p_ldrh_vs(p):        
-	'ldrh_cmd : LDRVSH'  
-	p[0] = (p[1], cond.VS)
-def p_ldrh_(p):          
-	'ldrh_cmd : LDRH'    
-	p[0] = (p[1], cond.AL)
-
-######
-# LDRSH
-######
-
-def p_ldrsh_tar(p):
-	'command : ldrsh_cmd argument addrmode'
-	(cmd, con) = p[1]
-	p[0] = instruction.LDRSH(con, p[2].value, p[3])
-
-def p_ldrsh_al(p):
-	'ldrsh_cmd : LDRALSH'
-	p[0] = (p[1], cond.AL)
-def p_ldrsh_cc(p):        
-	'ldrsh_cmd : LDRCCSH'  
-	p[0] = (p[1], cond.CC)
-def p_ldrsh_cs(p):        
-	'ldrsh_cmd : LDRCSSH'  
-	p[0] = (p[1], cond.CS)
-def p_ldrsh_eq(p):        
-	'ldrsh_cmd : LDREQSH'  
-	p[0] = (p[1], cond.EQ)
-def p_ldrsh_ge(p):        
-	'ldrsh_cmd : LDRGESH'  
-	p[0] = (p[1], cond.GE)
-def p_ldrsh_gt(p):        
-	'ldrsh_cmd : LDRGTSH'  
-	p[0] = (p[1], cond.GT)
-def p_ldrsh_hi(p):        
-	'ldrsh_cmd : LDRHISH'  
-	p[0] = (p[1], cond.HI)
-def p_ldrsh_hs(p):        
-	'ldrsh_cmd : LDRHSSH'  
-	p[0] = (p[1], cond.HS)
-def p_ldrsh_le(p):        
-	'ldrsh_cmd : LDRLESH'  
-	p[0] = (p[1], cond.LE)
-def p_ldrsh_lo(p):        
-	'ldrsh_cmd : LDRLOSH'  
-	p[0] = (p[1], cond.LO)
-def p_ldrsh_ls(p):        
-	'ldrsh_cmd : LDRLSSH'  
-	p[0] = (p[1], cond.LS)
-def p_ldrsh_lt(p):        
-	'ldrsh_cmd : LDRLTSH'  
-	p[0] = (p[1], cond.LT)
-def p_ldrsh_mi(p):        
-	'ldrsh_cmd : LDRMISH'  
-	p[0] = (p[1], cond.MI)
-def p_ldrsh_ne(p):        
-	'ldrsh_cmd : LDRNESH'  
-	p[0] = (p[1], cond.NE)
-def p_ldrsh_pl(p):        
-	'ldrsh_cmd : LDRPLSH'  
-	p[0] = (p[1], cond.PL)
-def p_ldrsh_vc(p):        
-	'ldrsh_cmd : LDRVCSH'  
-	p[0] = (p[1], cond.VC)
-def p_ldrsh_vs(p):        
-	'ldrsh_cmd : LDRVSSH'  
-	p[0] = (p[1], cond.VS)
-def p_ldrsh_(p):          
-	'ldrsh_cmd : LDRSH'    
-	p[0] = (p[1], cond.AL)
 
 ######
 # MLA
 ######
 def p_mla(p):
-	'command : mla_cmd argument argument argument argument'
-	(cmd, con, s) = p[1]
+	'command : MLA argument argument argument argument'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.MLA(con, s, p[2].value, p[3], p[4], p[5])
-
-def p_mla_(p):
-	'mla_cmd : MLA'
-	p[0] = (p[1], cond.AL, False)
-
-def p_mlas(p):
-	'mla_cmd : MLA STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_mlacs(p):
-	'mla_cmd :  MLA condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_mlac(p):
-	'bic_cmd : MLA condition'
-	p[0] = (p[1], p[2], False)
 
 ######
 # MOV
 ######
 def p_mov(p):
-	'command : mov_cmd argument shifter'
-	(cmd, con, s) = p[1]
+	'command : MOV argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.MOV(con, bool(s), p[2].value, p[3])
 
-def p_mov_(p):
-	'mov_cmd : MOV'
-	p[0] = (p[1], cond.AL, False)
-
-def p_movs(p):
-	'mov_cmd : MOV STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_movcs(p):
-	'mov_cmd : MOV condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_movc(p):
-	'mov_cmd : MOV condition'
-	p[0] = (p[1], p[2], False)
 
 ######
 # MRS
@@ -712,272 +208,123 @@ def p_movc(p):
 # MUL
 ######
 def p_mul(p):
-	'command : mul_cmd argument argument argument argument'
-	(cmd, con, s) = p[1]
+	'command : MUL argument argument argument argument'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.MUL(con, s, p[2].value, p[3], p[4], p[5])
-
-def p_mul_(p):
-	'mul_cmd : MUL'
-	p[0] = (p[1], cond.AL, False)
-
-def p_muls(p):
-	'mul_cmd : MUL STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_mulcs(p):
-	'mla_cmd :  MUL condition STATUS'
-	p[0] = (p[1], p[2], True)
 
 
 ######
 # MVN
 ######
 def p_mvn(p):
-	'command : mvn_cmd argument shifter'
-	(cmd, con, s) = p[1]
+	'command : MVN argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.MVN(con, bool(s), p[2].value, p[3])
 
-def p_mvn_(p):
-	'mvn_cmd : MVN'
-	p[0] = (p[1], cond.AL, False)
-
-def p_mvns(p):
-	'mvn_cmd : MVN STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_mvncs(p):
-	'mvn_cmd : MVN condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_mvnc(p):
-	'mvn_cmd : MVN condition'
-	p[0] = (p[1], p[2], False)
 	
 ######
 # ORR
 ######
 def p_orr(p):
-	'command : orr_cmd argument argument shifter'
-	(cmd, con, s) = p[1]
+	'command : ORR argument argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.ORR(con, s, p[2].value, p[3], p[4])
 
-def p_orr_(p):
-	'orr_cmd : ORR'
-	p[0] = (p[1], cond.AL, False)
-
-def p_orrs(p):
-	'orr_cmd : ORR STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_orrcs(p):
-	'orr_cmd :  ORR condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_orrc(p):
-	'bic_cmd : ORR condition'
-	p[0] = (p[1], p[2], False)
 
 ######
 # RSB
 ######
 def p_rsb(p):
-	'command : rsb_cmd argument argument shifter'
-	(cmd, con, s) = p[1]
+	'command : RSB argument argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.RSB(con, s, p[2].value, p[3], p[4])
 
-def p_rsb_(p):
-	'rsb_cmd : RSB'
-	p[0] = (p[1], cond.AL, False)
-
-def p_rsbs(p):
-	'rsb_cmd : RSB STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_rsbcs(p):
-	'rsb_cmd :  RSB condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_rsbc(p):
-	'rsb_cmd : RSB condition'
-	p[0] = (p[1], p[2], False)
 	
 ######
 # RSC
 ######
 def p_rsc(p):
-	'command : rsc_cmd argument argument shifter'
-	(cmd, con, s) = p[1]
+	'command : RSC argument argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.RSC(con, s, p[2].value, p[3], p[4])
 
-def p_rsc_(p):
-	'rsc_cmd : RSC'
-	p[0] = (p[1], cond.AL, False)
-
-def p_rscs(p):
-	'rsc_cmd : RSC STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_rsccs(p):
-	'rsc_cmd :  RSC condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_rscc(p):
-	'rsc_cmd : RSC condition'
-	p[0] = (p[1], p[2], False)
 	
 ######
 # SBC
 ######
 def p_sbc(p):
-	'command : sbc_cmd argument argument shifter'
-	(cmd, con, s) = p[1]
+	'command : SBC argument argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.SBC(con, s, p[2].value, p[3], p[4])
 
-def p_sbc_(p):
-	'sbc_cmd : SBC'
-	p[0] = (p[1], cond.AL, False)
-
-def p_sbcs(p):
-	'sbc_cmd : SBC STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_sbccs(p):
-	'sbc_cmd :  SBC condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_sbcc(p):
-	'sbc_cmd : SBC condition'
-	p[0] = (p[1], p[2], False)
 
 ######
 # SMLAL
 ######
 def p_smlal(p):
-	'command : smlal_cmd argument argument argument argument'
-	(cmd, con, s) = p[1]
+	'command : SMLAL argument argument argument argument'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.SMLAL(con, s, p[2].value, p[3].value, p[4], p[5])
 
-def p_smlal_(p):
-	'smlal_cmd : SMLAL'
-	p[0] = (p[1], cond.AL, False)
-
-def p_smlals(p):
-	'smlal_cmd : SMLAL STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_smlalcs(p):
-	'smlal_cmd :  SMLAL condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_smlalc(p):
-	'smlal_cmd : SMLAL condition'
-	p[0] = (p[1], p[2], False)
 
 ######
 # SMULL
 ######
 def p_smull(p):
-	'command : smull_cmd argument argument argument argument'
-	(cmd, con, s) = p[1]
+	'command : SMULL argument argument argument argument'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.SMULL(con, s, p[2].value, p[3].value, p[4], p[5])
 
-def p_smull_(p):
-	'smull_cmd : SMULL'
-	p[0] = (p[1], cond.AL, False)
+######
+# STR
+######
+def p_str(p):
+	'command : STR argument addrmode'
+	(ins, con, s, other) = p[1]
+	if other == False:
+		p[0] = instruction.STR(con, p[2].value, p[3])
+	elif other == "B":
+		p[0] = instruction.STRB(con, p[2].value, p[3])
+	elif other == "H":
+		p[0] = instruction.STRH(con, p[2].value, p[3])
 
-def p_smulls(p):
-	'smull_cmd : SMULL STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_smullcs(p):
-	'smull_cmd :  SMULL condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_smullc(p):
-	'smull_cmd : SMULL condition'
-	p[0] = (p[1], p[2], False)
 
 ######
 # SUB
 ######
 def p_sub(p):
-	'command : sub_cmd argument argument shifter'
-	(cmd, con, s) = p[1]
+	'command : SUB argument argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.SUB(con, s, p[2].value, p[3], p[4])
 
-def p_sub_(p):
-	'sub_cmd : SUB'
-	p[0] = (p[1], cond.AL, False)
-
-def p_subs(p):
-	'sub_cmd : SUB STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_subcs(p):
-	'sub_cmd :  SUB condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_subc(p):
-	'sub_cmd : SUB condition'
-	p[0] = (p[1], p[2], False)
 
 
 ######
 # TEQ
 ######
 def p_teq(p):
-	'command : teq_cmd argument shifter'
-	(cmd, con, _) = p[1]
+	'command : TEQ argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.TEQ(con, p[2].value, p[3])
 
-def p_teq_(p):
-	'teq_cmd : TEQ'
-	p[0] = (p[1], cond.AL, False)
-
-def p_teqc(p):
-	'teq_cmd : TEQ condition'
-	p[0] = (p[1], p[2], False)
 
 ######
 # TST
 ######
 def p_tst(p):
-	'command : tst_cmd argument shifter'
-	(cmd, con, _) = p[1]
+	'command : TST argument shifter'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.TST(con, p[2].value, p[3])
-
-def p_tst_(p):
-	'tst_cmd : TST'
-	p[0] = (p[1], cond.AL, False)
-
-def p_tstc(p):
-	'tst_cmd : TST condition'
-	p[0] = (p[1], p[2], False)
 	
 	
 ######
 # UMLAL
 ######
 def p_umlal(p):
-	'command : umlal_cmd argument argument argument argument'
-	(cmd, con, s) = p[1]
+	'command : UMLAL argument argument argument argument'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.UMLAL(con, s, p[2].value, p[3].value, p[4], p[5])
 
-def p_umlal_(p):
-	'umlal_cmd : UMLAL'
-	p[0] = (p[1], cond.AL, False)
-
-def p_umlals(p):
-	'umlal_cmd : UMLAL STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_umlalcs(p):
-	'umlal_cmd :  UMLAL condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_umlalc(p):
-	'umlal_cmd : UMLAL condition'
-	p[0] = (p[1], p[2], False)
 
 ######
 # DCB
@@ -1014,25 +361,10 @@ def p_hexmemnum(p):
 # UMULL
 ######
 def p_umull(p):
-	'command : umull_cmd argument argument argument argument'
-	(cmd, con, s) = p[1]
+	'command : UMULL argument argument argument argument'
+	(ins, con, s, other) = p[1]
 	p[0] = instruction.UMULL(con, s, p[2].value, p[3].value, p[4], p[5])
 
-def p_umull_(p):
-	'umull_cmd : UMULL'
-	p[0] = (p[1], cond.AL, False)
-
-def p_umulls(p):
-	'umull_cmd : UMULL STATUS'
-	p[0] = (p[1], cond.AL, True)
-
-def p_umullcs(p):
-	'umull_cmd :  UMULL condition STATUS'
-	p[0] = (p[1], p[2], True)
-
-def p_umullc(p):
-	'umull_cmd : UMULL condition'
-	p[0] = (p[1], p[2], False)
 
 
 ###########
@@ -1136,79 +468,6 @@ def p_argument_lr(p):
 def p_argument_pc(p):
 	'argument : PC'
 	p[0] = instruction.reg(15)
-
-
-#############
-# condition
-#############
-
-def p_condition_al(p):
-	'condition : AL'
-	p[0] = cond.AL
-
-def p_condition_cc(p):
-	'condition : CC'
-	p[0] = cond.CC
-
-def p_condition_cs(p):
-	'condition : CS'
-	p[0] = cond.CS
-
-def p_condition_eq(p):
-	'condition : EQ'
-	p[0] = cond.EQ
-
-def p_condition_ge(p):
-	'condition : GE'
-	p[0] = cond.GE
-
-def p_condition_gt(p):
-	'condition : GT'
-	p[0] = cond.GT
-
-def p_condition_hi(p):
-	'condition : HI'
-	p[0] = cond.HI
-
-def p_condition_hs(p):
-	'condition : HS'
-	p[0] = cond.HS
-
-def p_condition_le(p):
-	'condition : LE'
-	p[0] = cond.LE
-
-def p_condition_lo(p):
-	'condition : LO'
-	p[0] = cond.LO
-
-def p_condition_ls(p):
-	'condition : LS'
-	p[0] = cond.LS
-
-def p_condition_lt(p):
-	'condition : LT'
-	p[0] = cond.LT
-
-def p_condition_mi(p):
-	'condition : MI'
-	p[0] = cond.MI
-
-def p_condition_ne(p):
-	'condition : NE'
-	p[0] = cond.NE
-
-def p_condition_pl(p):
-	'condition : PL'
-	p[0] = cond.PL
-
-def p_condition_vc(p):
-	'condition : VC'
-	p[0] = cond.VC
-
-def p_condition_vs(p):
-	'condition : VS'
-	p[0] = cond.VS
 
 ########
 # shift

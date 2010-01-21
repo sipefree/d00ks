@@ -1022,17 +1022,145 @@ class SMULL(Instruction):
 		return "SMULL%s%s R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rdlo, self.rdhi, str(self.rm), str(self.rs))
 
+class LDR(Instruction):
+	"""
+	LDR{<cond>} <Rd>, <addressing_mode>
+	
+	Load-register
+	"""
+	def __init__(self, cond, rd, addr_mode):
+		self.cond = cond
+		self.rd = rd
+		self.addr_mode = addr_mode
+ 
+	@promise.sensible()
+	def execute(self, registers):
+		if self.cond(registers):
+			addr = self.addr_mode.get(registers)
+			if type(self.addr_mode) == Target:
+				registers[self.rd] = addr
+			else:
+				word = registers.memory.ldrw(addr)
+				registers[self.rd] = word
+ 
+	def __str__(self):
+		return "LDR%s R%i, %s"%\
+			(self.cond.__name__, self.rd, str(self.addr_mode))
+
+	
+class LDRB(Instruction):
+	"""
+	LDR{<cond>}B <Rd>, <addressing_mode>
+	
+	Load-register
+	"""
+	def __init__(self, cond, rd, addr_mode):
+		self.cond = cond
+		self.rd = rd
+		self.addr_mode = addr_mode
+		if type(addr_mode) == Target:
+			raise SyntaxError("LDRB: Psuedoinstruction only allowed in word-form. (Must use LDR instead)")
+	
+	@promise.sensible()
+	def execute(self, registers):
+		if self.cond(registers):
+			addr = self.addr_mode.get(registers)
+			byte = registers.memory.ldrb(addr)
+			registers[self.rd] = byte
+	
+	def __str__(self):
+		return "LDR%sB R%i, %s"%\
+			(self.cond.__name__, self.rd, str(self.addr_mode))
+
+class LDRH(Instruction):
+	"""
+	LDR{<cond>}H <Rd>, <addressing_mode>
+	
+	Load-register
+	"""
+	def __init__(self, cond, rd, addr_mode):
+		self.cond = cond
+		self.rd = rd
+		self.addr_mode = addr_mode
+		if type(addr_mode) == Target:
+			raise SyntaxError("LDRB: Psuedoinstruction only allowed in word-form. (Must use LDR instead)")
+	
+	@promise.sensible()
+	def execute(self, registers):
+		if self.cond(registers):
+			addr = self.addr_mode.get(registers)
+			hw = registers.memory.ldrh(addr)
+			registers[self.rd] = byte
+			
+	def __str__(self):
+		return "LDR%sH R%i, %s"%\
+			(self.cond.__name__, self.rd, str(self.addr_mode))
+
 class STM(Instruction):
 	pass
 
 class STR(Instruction):
-	pass
+	"""
+	STR{<cond>} <Rd>, <addressing_mode>
+	
+	Store-register
+	"""
+	def __init__(self, cond, rd, addr_mode):
+		self.cond = cond
+		self.rd = rd
+		self.addr_mode = addr_mode
+	
+	@promise.sensible()
+	def execute(self, registers):
+		if self.cond(registers):
+			addr = self.addr_mode.get(registers)
+			registers.memory.strw(addr, registers[self.rd])
+	
+	def __str__(self):
+		return "STR%s R%i, %s"%\
+			(self.cond.__name__, self.rd, str(self.addr_mode))
 
 class STRB(Instruction):
-	pass
+	"""
+	STR{<cond>}B <Rd>, <addressing_mode>
+	
+	Store-register
+	"""
+	def __init__(self, cond, rd, addr_mode):
+		self.cond = cond
+		self.rd = rd
+		self.addr_mode = addr_mode
+	
+	@promise.sensible()
+	def execute(self, registers):
+		if self.cond(registers):
+			addr = self.addr_mode.get(registers)
+			registers.memory.strw(addr, registers[self.rd] & 0xFF)
+	
+	def __str__(self):
+		return "STR%s R%i, %s"%\
+			(self.cond.__name__, self.rd, str(self.addr_mode))
 
 class STRH(Instruction):
-	pass
+	"""
+	STR{<cond>}H <Rd>, <addressing_mode>
+	
+	Store-register
+	"""
+	def __init__(self, cond, rd, addr_mode):
+		self.cond = cond
+		self.rd = rd
+		self.addr_mode = addr_mode
+	
+	@promise.sensible()
+	def execute(self, registers):
+		if self.cond(registers):
+			addr = self.addr_mode.get(registers)
+			registers.memory.strw(addr, registers[self.rd] & 0xFFFF)
+	
+	def __str__(self):
+		return "STR%s R%i, %s"%\
+			(self.cond.__name__, self.rd, str(self.addr_mode))
 
 class SUB(Instruction):
 	"""
