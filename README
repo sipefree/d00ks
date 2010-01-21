@@ -1,11 +1,60 @@
-RUNNING
-	Navigate to the d00ks directory and run the following command:
-	$ python parser.py
+INTRO
+	d00ks is an ARM assembler and simulator.
+	It currently does not convert instructions to ARM machine code, and
+	runs all instructions symbolically in python.
+	The simulator is not designed for speed, and currently the performance
+	is only suitable for debugging.
+	In the future, LLVM bindings and output to machine code will be possible.
 
-	There is a basic ARM program in there that will compile and run.
-	You can modify the program etc etc.
+USAGE
+	Syntax for the basic debugger:
+		$ ./dasm.py [-e] file.s
+	
+	Options:
+		-e		Execute the program immediately without going into step-mode.
 
-	program.debug() starts a simple debugging REPL. Currently the
-	only working command is 's' for step. Breakpoints are coming soon.
+MODULES
+	The assembler uses PLY as a lexer/parser combo.
+	The simulator uses promise.py to optimize python bytecode where possible.
 
-	This is started automatically by running parser.py
+	cond.py
+		Has one function for each conditional code in ARM, called by an instruction
+		to determine whether it should execute.
+	dasm.py
+		A command-line based interface to the assembler and debugger.
+	instruction.py
+		Contains classes abstracting most ARM functionality.
+		For example:
+			Register/value accesses
+			Label/value targets
+			Addressing modes
+			Bit-shifting operations
+			Instructions themselves
+		Each instruction is represented by a class, and when an instruction
+		appears in the program code that is being run, an object of that class
+		exists in the simulator. The execute() method is run on that object,
+		passing the program state (registers) as arguments.
+	lexer.py
+		Used by PLY to define with regular expressions each token that will be
+		parsed.
+	memory.py
+		Contains classes representing memory in the ARM system. An object of
+		class Memory is able to perform load and store operations on passed
+		virtual addresses (which are then translated into physical) addresses
+		in the struct representing memory. It supports all ARM load and store
+		operations, i.e. word, halfword, and byte.
+		This file also contains classes representing compile-time memory store
+		operations such as DCB and SPACE.
+	parser.py
+		Contains the yacc-based parser for d00ks. It is formed in a top-down
+		fashion, with more abstract things at the top and the least abstract
+		things at the bottom. Take a look at any instruction's entry for ideas
+		on how to implement a new instruction. Tricky things can be implementing
+		lists of items. Check out how attrlists for AREA directives are implemented.
+	register.py
+		Has a class representing the register state of a program. By proxy it also
+		has a pointer to the Memory instance for the program, and the symbol table
+		(which is available at runtime to the simulator).
+	simulator.py
+		Has a rather simplex class called Program which will run the fetch/decode/execute
+		cycle for the program.

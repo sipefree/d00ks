@@ -19,6 +19,61 @@
 
 import ply.lex as lex
 import instruction
+import cond
+
+"""
+Notes:
+Originally the compiler tried to match things like
+<instruction> <condition> <status>
+
+This ended up causing ambiguities and didn't work ;_;
+
+So we have a new solution. We generate every permutation of
+an instruction and add it to a table, storing metadata of
+the instruction (status flag on, which condition etc) in a tuple
+which is handed to the parser.
+
+The parser became much simpler due to this.
+"""
+
+_conds = ['', 'EQ', 'NE', 'CS', 'HS', 'CC', 'LO', 'MI', 'PL', 'VS', 'VC', 'HI', 'LS', 'GE', 'LT', 'GT', 'LE', 'AL']
+_aconds = [cond.AL, cond.EQ, cond.NE, cond.CS, cond.HS, cond.CC, cond.LO, cond.MI, cond.PL, cond.VS, cond.VC, cond.HI, cond.LS, cond.GE, cond.LT, cond.GT, cond.LE, cond.AL]
+instrs = []
+perms = {}
+
+def get_cond(s):
+	return _aconds[_conds.index(s)]
+
+def generate(instr, conds=True, status=True, other=False, fother=False):
+	ret = []
+	instrs.append(instr)
+	if conds:
+		for c in _conds:
+			ret.append(instr+c)
+			perms[instr+c] = (instr, get_cond(c), False, False)
+			if status:
+				ret.append(instr+c+"S")
+				perms[instr+c+"S"] = (instr, get_cond(c), True, False)
+			if other:
+				for o in other:
+					ret.append(instr+c+o)
+					perms[instr+c+o] = (instr, get_cond(c), False, o)
+			if fother:
+				for o in fother:
+					ret.append(instr+o+c)
+					perms[instr+o+c] = (instr, get_cond(c), False, o)
+	else:
+		ret = [instr]
+		perms[instr] = (instr, False, False, False)
+		if status:
+			ret.append(instr+"S")
+			perms[instr+"S"] = (instr, False, True, False)
+		if other:
+			for o in other:
+				ret.append(instr+o)
+				perms[instr+o] = (instr, False, False, o)
+	return ret
+	
 
 reserved = [
 	'SL',
@@ -29,119 +84,44 @@ reserved = [
 	'PC',
 	
 	# instructions
-	'ADC',
-	'ADD',
-	'AND',
-	'ASR',
-	'B',
-	'BL',
-	'BAL',
-	'BCC',
-	'BCS',
-	'BEQ',
-	'BGE',
-	'BGT',
-	'BHI',
-	'BHS',
-	'BLE',
-	'BLO',
-	'BLS',
-	'BLT',
-	'BMI',
-	'BNE',
-	'BPL',
-	'BVC',
-	'BVS',
-	
-	'BLAL','BLCC','BLCS','BLEQ','BLGE',
-	'BLGT','BLHI','BLHS','BLLE','BLLO',
-	'BLLS','BLLT','BLMI','BLNE','BLPL',
-	'BLVC','BLVS',
-
-	'LDRALB','LDRCCB','LDRCSB','LDREQB',
-	'LDRGEB','LDRGTB','LDRHIB','LDRHSB',
-	'LDRLEB','LDRLOB','LDRLSB','LDRLTB',
-	'LDRMIB','LDRNEB','LDRPLB','LDRVCB',
-	'LDRVSB',
-
-	'LDRALH','LDRCCH','LDRCSH','LDREQH',
-	'LDRGEH','LDRGTH','LDRHIH','LDRHSH',
-	'LDRLEH','LDRLOH','LDRLSH','LDRLTH',
-	'LDRMIH','LDRNEH','LDRPLH','LDRVCH',
-	'LDRVSH',
-	
-	'LDRALSB','LDRCCSB','LDRCSSB','LDREQSB',
-	'LDRGESB','LDRGTSB','LDRHISB','LDRHSSB',
-	'LDRLESB','LDRLOSB','LDRLSSB','LDRLTSB',
-	'LDRMISB','LDRNESB','LDRPLSB','LDRVCSB',
-	'LDRVSSB',
-	
-	'LDRALSH','LDRCCSH','LDRCSSH','LDREQSH',
-	'LDRGESH','LDRGTSH','LDRHISH','LDRHSSH',
-	'LDRLESH','LDRLOSH','LDRLSSH','LDRLTSH',
-	'LDRMISH','LDRNESH','LDRPLSH','LDRVCSH',
-	'LDRVSSH',
-	
-	'BIC',
-	'BKPT',
-	'BX',
-	'CMN',
-	'CMP',
-	'EOR',
-	'LDM',
-	'LDR',
-	'LDRB',
-	'LDRH',
-	'LDRSB',
-	'LDRSH',
-	'LSL',
-	'LSR',
-	'MLA',
-	'MOV',
-	'MRS',
-	'MSR',
-	'MUL',
-	'MVN',
-	'ORR',
-	'ROR',
-	'RRX',
-	'RSB',
-	'RSC',
-	'SBC',
-	'SMLAL',
-	'SMULL',
-	'STM',
-	'STR',
-	'STRB',
-	'STRH',
-	'SUB',
-	'SWP',
-	'SWPB',
-	'TEQ',
-	'TST',
-	'UMLAL',
-	'UMULL',
-	
-	# conditionals
-	'AL',
-	'CC',
-	'CS',
-	'EQ',
-	'GE',
-	'GT',
-	'HI',
-	'HS',
-	'LE',
-	'LO',
-	'LS',
-	'LT',
-	'MI',
-	'NE',
-	'PL',
-	'VC',
-	'VS',
-
-	# directives
+	] + \
+	generate('ADC') +\
+	generate('ADD') +\
+	generate('AND') +\
+	['ASR'] +\
+	generate('B', status=False, fother=['X', 'L']) +\
+	generate('LDR', status=False, other=['B', 'H', 'SB', 'SH']) +\
+	generate('BIC', status=False) +\
+	['BKPT'] +\
+	generate('CMN', status=False) +\
+	generate('CMP', status=False) +\
+	generate('EOR') +\
+	generate('LDM', status=False, other=['IA', 'IB', 'DA', 'DB', 'FD', 'FA', 'ED', 'EA']) +\
+	['LSL'] +\
+	['LSR'] +\
+	generate('MLA') +\
+	generate('MOV') +\
+	generate('MRS') +\
+	generate('MSR', status=False) +\
+	generate('MUL') +\
+	generate('MVN') +\
+	generate('ORR') +\
+	['ROR'] +\
+	['RRX'] +\
+	generate('RSB') +\
+	generate('RSC') +\
+	generate('SBC') +\
+	generate('SMLAL') +\
+	generate('SMULL') +\
+	generate('STM', status=False, other=['IA', 'IB', 'DA', 'DB', 'FD', 'FA', 'ED', 'EA']) +\
+	generate('STR', status=False, other=['B', 'H', 'SB', 'SH']) +\
+	generate('SUB') +\
+	generate('SWP', status=False, other=['B']) +\
+	generate('TEQ', status=False) +\
+	generate('TST', status=False) +\
+	generate('UMLAL') +\
+	generate('UMULL') + [
+	#directives
 	'AREA',
 	'CODE',
 	'DATA',
@@ -154,10 +134,9 @@ reserved = [
 	'DCB',
 	'DCW',
 	'DCH',
-	'SPACE',
-]
+	'SPACE']
 
-tokens = [
+stuff = [
 	'CONSTNUM',
 	'HEXNUM',
 	'REGISTER',
@@ -173,9 +152,9 @@ tokens = [
 	'CHAR',
 	'MEMNUM',
 	'MEMHEXNUM',
-	'BANG',
-	
-] + reserved
+	'BANG',	
+]
+tokens = stuff + reserved
 
 t_OPENSQ = r'\['
 t_CLOSESQ = r'\]'
@@ -218,9 +197,9 @@ def t_REGISTER(t):
 	t.value = instruction.reg(int(t.value[1:]))
 	return t
 
-t_B = r'(b|B)'
-t_BL = r'(bl|BL)'
-t_STATUS = r'(s|S)'
+#t_B = r'(b|B)'
+#t_BL = r'(bl|BL)'
+#t_STATUS = r'(s|S)'
 
 t_SL = r'(sl|SL)'
 t_FP = r'(fp|FP)'
@@ -242,183 +221,7 @@ t_DCW = r'(dcw|DCW)'
 t_DCH = r'(dch|DCH)'
 t_SPACE = r'(space|SPACE)'
 
-t_ADC = r'(adc|ADC)'
-t_ADD = r'(add|ADD)'
-t_AND = r'(and|AND)'
-t_ASR = r'(asr|ASR)'
 
-t_BAL = r'(bal|BAL)'
-t_BCC = r'(bcc|BCC)'
-t_BCS = r'(bcs|BCS)'
-t_BEQ = r'(beq|BEQ)'
-t_BGE = r'(bge|BGE)'
-t_BGT = r'(bgt|BGT)'
-t_BHI = r'(bhi|BHI)'
-t_BHS = r'(bhs|BHS)'
-t_BLE = r'(ble|BLE)'
-t_BLO = r'(blo|BLO)'
-t_BLS = r'(bls|BLS)'
-t_BLT = r'(blt|BLT)'
-t_BMI = r'(bmi|BMI)'
-t_BNE = r'(bne|BNE)'
-t_BPL = r'(bpl|BPL)'
-t_BVC = r'(bvc|BVC)'
-t_BVS = r'(bvs|BVS)'
-
-t_BLAL = r'(blal|BLAL)'
-t_BLCC = r'(blcc|BLCC)'
-t_BLCS = r'(blcs|BLCS)'
-t_BLEQ = r'(bleq|BLEQ)'
-t_BLGE = r'(blge|BLGE)'
-t_BLGT = r'(blgt|BLGT)'
-t_BLHI = r'(blhi|BLHI)'
-t_BLHS = r'(blhs|BLHS)'
-t_BLLE = r'(blle|BLLE)'
-t_BLLO = r'(bllo|BLLO)'
-t_BLLS = r'(blls|BLLS)'
-t_BLLT = r'(bllt|BLLT)'
-t_BLMI = r'(blmi|BLMI)'
-t_BLNE = r'(blne|BLNE)'
-t_BLPL = r'(blpl|BLPL)'
-t_BLVC = r'(blvc|BLVC)'
-t_BLVS = r'(blvs|BLVS)'
-
-t_LDRALB = r'(ldralb|LDRALB)'
-t_LDRCCB = r'(ldrccb|LDRCCB)'
-t_LDRCSB = r'(ldrcsb|LDRCSB)'
-t_LDREQB = r'(ldreqb|LDREQB)'
-t_LDRGEB = r'(ldrgeb|LDRGEB)'
-t_LDRGTB = r'(ldrgtb|LDRGTB)'
-t_LDRHIB = r'(ldrhib|LDRHIB)'
-t_LDRHSB = r'(ldrhsb|LDRHSB)'
-t_LDRLEB = r'(ldrleb|LDRLEB)'
-t_LDRLOB = r'(ldrlob|LDRLOB)'
-t_LDRLSB = r'(ldrlsb|LDRLSB)'
-t_LDRLTB = r'(ldrltb|LDRLTB)'
-t_LDRMIB = r'(ldrmib|LDRMIB)'
-t_LDRNEB = r'(ldrneb|LDRNEB)'
-t_LDRPLB = r'(ldrplb|LDRPLB)'
-t_LDRVCB = r'(ldrvcb|LDRVCB)'
-t_LDRVSB = r'(ldrvsb|LDRVSB)'
-t_LDRALH = r'(ldralh|LDRALH)'
-t_LDRCCH = r'(ldrcch|LDRCCH)'
-t_LDRCSH = r'(ldrcsh|LDRCSH)'
-t_LDREQH = r'(ldreqh|LDREQH)'
-t_LDRGEH = r'(ldrgeh|LDRGEH)'
-t_LDRGTH = r'(ldrgth|LDRGTH)'
-t_LDRHIH = r'(ldrhih|LDRHIH)'
-t_LDRHSH = r'(ldrhsh|LDRHSH)'
-t_LDRLEH = r'(ldrleh|LDRLEH)'
-t_LDRLOH = r'(ldrloh|LDRLOH)'
-t_LDRLSH = r'(ldrlsh|LDRLSH)'
-t_LDRLTH = r'(ldrlth|LDRLTH)'
-t_LDRMIH = r'(ldrmih|LDRMIH)'
-t_LDRNEH = r'(ldrneh|LDRNEH)'
-t_LDRPLH = r'(ldrplh|LDRPLH)'
-t_LDRVCH = r'(ldrvch|LDRVCH)'
-t_LDRVSH = r'(ldrvsh|LDRVSH)'
-t_LDRALSB = r'(ldralsb|LDRALSB)'
-t_LDRCCSB = r'(ldrccsb|LDRCCSB)'
-t_LDRCSSB = r'(ldrcssb|LDRCSSB)'
-t_LDREQSB = r'(ldreqsb|LDREQSB)'
-t_LDRGESB = r'(ldrgesb|LDRGESB)'
-t_LDRGTSB = r'(ldrgtsb|LDRGTSB)'
-t_LDRHISB = r'(ldrhisb|LDRHISB)'
-t_LDRHSSB = r'(ldrhssb|LDRHSSB)'
-t_LDRLESB = r'(ldrlesb|LDRLESB)'
-t_LDRLOSB = r'(ldrlosb|LDRLOSB)'
-t_LDRLSSB = r'(ldrlssb|LDRLSSB)'
-t_LDRLTSB = r'(ldrltsb|LDRLTSB)'
-t_LDRMISB = r'(ldrmisb|LDRMISB)'
-t_LDRNESB = r'(ldrnesb|LDRNESB)'
-t_LDRPLSB = r'(ldrplsb|LDRPLSB)'
-t_LDRVCSB = r'(ldrvcsb|LDRVCSB)'
-t_LDRVSSB = r'(ldrvssb|LDRVSSB)'
-t_LDRALSH = r'(ldralsh|LDRALSH)'
-t_LDRCCSH = r'(ldrccsh|LDRCCSH)'
-t_LDRCSSH = r'(ldrcssh|LDRCSSH)'
-t_LDREQSH = r'(ldreqsh|LDREQSH)'
-t_LDRGESH = r'(ldrgesh|LDRGESH)'
-t_LDRGTSH = r'(ldrgtsh|LDRGTSH)'
-t_LDRHISH = r'(ldrhish|LDRHISH)'
-t_LDRHSSH = r'(ldrhssh|LDRHSSH)'
-t_LDRLESH = r'(ldrlesh|LDRLESH)'
-t_LDRLOSH = r'(ldrlosh|LDRLOSH)'
-t_LDRLSSH = r'(ldrlssh|LDRLSSH)'
-t_LDRLTSH = r'(ldrltsh|LDRLTSH)'
-t_LDRMISH = r'(ldrmish|LDRMISH)'
-t_LDRNESH = r'(ldrnesh|LDRNESH)'
-t_LDRPLSH = r'(ldrplsh|LDRPLSH)'
-t_LDRVCSH = r'(ldrvcsh|LDRVCSH)'
-t_LDRVSSH = r'(ldrvssh|LDRVSSH)'
-
-
-t_BIC = r'(bic|BIC)'
-t_BKPT = r'(bkpt|BKPT)'
-t_BX = r'(bx|BX)'
-t_CMN = r'(cmn|CMN)'
-t_CMP = r'(cmp|CMP)'
-t_EOR = r'(eor|EOR)'
-t_LDM = r'(ldm|LDM)'
-t_LDR = r'(ldr|LDR)'
-t_LDRB = r'(ldrb|LDRB)'
-t_LDRH = r'(ldrh|LDRH)'
-t_LDRSB = r'(ldsb|LDSB)'
-t_LDRSH = r'(ldsh|LDSH)'
-t_LSL = r'(lsl|LSL)'
-t_LSR = r'(lsr|LSR)'
-t_MLA = r'(mla|MLA)'
-t_MOV = r'(mov|MOV)'
-t_MRS = r'(mrs|MRS)'
-t_MSR = r'(msr|MSR)'
-t_MUL = r'(mul|MUL)'
-t_MVN = r'(mvn|MVN)'
-t_ORR = r'(orr|ORR)'
-t_ROR = r'(ror|ROR)'
-t_RRX = r'(rrx|RRX)'
-t_RSB = r'(rsb|RSB)'
-t_RSC = r'(rsc|RSC)'
-t_SBC = r'(sbc|SBC)'
-t_SMLAL = r'(smlal|SMLAL)'
-t_SMULL = r'(smull|SMULL)'
-t_STM = r'(stm|STM)'
-t_STR = r'(str|STR)'
-t_STRB = r'(strb|STRB)'
-t_STRH = r'(strh|STRH)'
-t_SUB = r'(sub|SUB)'
-t_SWP = r'(swp|SWP)'
-t_SWPB = r'(swpb|SWPB)'
-t_TEQ = r'(teq|TEQ)'
-t_TST = r'(tst|TST)'
-t_UMLAL = r'(umlal|UMLAL)'
-t_UMULL = r'(umull|UMULL)'
-t_AL = r'(al|AL)'
-t_CC = r'(cc|CC)'
-t_CS = r'(cs|CS)'
-t_EQ = r'(eq|EQ)'
-t_GE = r'(ge|GE)'
-t_GT = r'(gt|GT)'
-t_HI = r'(hi|HI)'
-t_HS = r'(hs|HS)'
-t_LE = r'(le|LE)'
-t_LO = r'(lo|LO)'
-t_LS = r'(ls|LS)'
-t_LT = r'(lt|LT)'
-t_MI = r'(mi|MI)'
-t_NE = r'(ne|NE)'
-t_PL = r'(pl|PL)'
-t_VC = r'(vc|VC)'
-t_VS = r'(vs|VS)'
-
-def t_LABEL(t):
-	r'[a-zA-Z_][a-zA-Z0-9_]+'
-	t.type = t.value if t.value in reserved else "LABEL"
-	return t
-
-def t_LABELTARGET(t):
-	r'\=[A-Za-z_][a-zA-Z0-9_]+'
-	t.value = instruction.label(t.value[1:])
-	return t
 
 def t_IMMTARGET(t):
 	r'\=\d+'
@@ -443,6 +246,19 @@ def t_error(t):
     print "Illegal character '%s'" % t.value[0]
     t.lexer.skip(1)
 
+def t_LABEL(t):
+	r'[a-zA-Z_]([a-zA-Z0-9_]+)?'
+	if t.value.upper() in perms:
+		t.type = perms[t.value][0]
+		t.value = perms[t.value]
+	elif t.value.upper() in reserved:
+		t.type = t.value
+	return t
+
+def t_LABELTARGET(t):
+	r'\=[a-zA-Z_][a-zA-Z0-9_]+'
+	t.value = instruction.label(t.value[1:])
+	return t
 
 lex.lex()
 
