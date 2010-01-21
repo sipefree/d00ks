@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 ##########################################################################
 # This file is part of d00ks.
 # 
@@ -18,54 +19,10 @@
 
 print "COMPILING PARSER..."
 from parser import *
+from sys import argv
 
-prog = """
-AREA Primes, CODE, READONLY
-
-start
-	MOV R5, #1
-	MOV R6, #0
-loop
-	CMP R5, #1000
-	BGE stop
-	MOV R0, R5
-	MOV R1, #3
-	BL divmod
-	CMP R0, #0
-	BEQ win
-	MOV R0, R5
-	MOV R1, #5
-	BL divmod
-	CMP R0, #0
-	BEQ win
-	B next
-win
-	ADD R6, R6, R5
-next
-	ADD R5, R5, #1
-	B loop
-
-; stores quotient in R1, remainder in R0
-divmod
-	MOV R3, #0
-divmod_while
-	CMP R1, #0
-	BEQ divmod_err
-	CMP R0, R1
-	BLT divmod_done
-	ADD R3, R3, #1
-	SUB R0, R0, R1
-	B divmod_while
-divmod_err
-	MOV R3, #0xFFFFFFFF
-divmod_done
-	MOV R1, R3
-	MOV PC, LR
-
-
-stop B stop
-
-"""
+f = open(argv[-1])
+prog = f.read()
 
 print "INPUT:"
 i = 1
@@ -81,7 +38,10 @@ pp = pprint.PrettyPrinter()
 output = parser.parse(prog)
 pp.pprint(output)
 
-program = simulator.program()
+program = simulator.Program()
 program.compile(output)
 
-program.debug()
+if "-e" in argv:
+	program.run()
+else:
+	program.debug()

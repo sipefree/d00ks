@@ -22,84 +22,104 @@ of registers will return whether or not the condition passes,
 given that conditions are based on the CPSR.
 """
 
+import promise
 
+@promise.sensible()
+@promise.pure()
 def EQ(r):
 	"""Passes if zero flag is set."""
-	if r[r.CPSR] & r.Z:
-		return True
-	else:
-		return False
+	return bool(r[r.CPSR] & r.Z)
 
+@promise.sensible()
+@promise.pure()
 def NE(r):
 	"""Passes is zero flag is not set."""
-	return not EQ(r)
+	return not bool(r[r.CPSR] & r.Z)
 
+@promise.sensible()
+@promise.pure()
 def CS(r):
 	"""Passes if carry set / Unsigned higher or same"""
-	if r[r.CPSR] & r.C:
-		return True
-	else:
-		return False
+	return bool(r[r.CPSR] & r.C)
 
+@promise.sensible()
+@promise.pure()
 def HS(r):
-	return CS(r)
+	return bool(r[r.CPSR] & r.C)
 
-
+@promise.sensible()
+@promise.pure()
 def CC(r):
 	"""Passes if carry clear / Unsigned lower"""
-	return not CS(r)
+	return not bool(r[r.CPSR] & r.C)
 
-
+@promise.sensible()
+@promise.pure()
 def LO(r):
-	return CC(r)
+	return not bool(r[r.CPSR] & r.C)
 
-	
+@promise.sensible()
+@promise.pure()
 def MI(r):
 	"""Passes if negative flag is set / Less than"""
-	if r[r.CPSR] & r.N:
-		return True
-	else:
-		return False
+	return bool(r[r.CPSR] & r.N)
 
+@promise.sensible()
+@promise.pure()
 def PL(r):
 	"""Passes if positive or zero"""
-	return not MI(r)
+	return not bool(r[r.CPSR] & r.N)
 
+@promise.sensible()
+@promise.pure()
 def VS(r):
 	"""Passes if overflow set"""
-	if r[r.CPSR] & r.V:
-		return True
-	else:
-		return False
+	return bool(r[r.CPSR] & r.V)
 
+@promise.sensible()
+@promise.pure()
 def VC(r):
 	"""Passes if overflow not set"""
-	return VS(r)
+	return not bool(r[r.CPSR] & r.V)
 
+@promise.sensible()
+@promise.pure()
 def HI(r):
 	"""Unsigned higher / C and not Z"""
-	return CS(r) and not EQ(r)
+	return bool(r[r.CPSR] & r.C) and not bool(r[r.CPSR] & r.Z)
 
+@promise.sensible()
+@promise.pure()
 def LS(r):
 	"""Unsigned lower or same"""
-	return (not CS(r)) or EQ(r)
+	return (not bool(r[r.CPSR] & r.C)) or bool(r[r.CPSR] & r.Z)
 
+@promise.sensible()
+@promise.pure()
 def GE(r):
 	"""Signed greater than or equal"""
-	return (MI(r) and VS(r)) or ((not MI(r)) and (not VS(r)))
+	return (bool(r[r.CPSR] & r.N) and bool(r[r.CPSR] & r.V)) or ((not bool(r[r.CPSR] & r.N)) and (not bool(r[r.CPSR] & r.V)))
 
+@promise.sensible()
+@promise.pure()
 def LT(r):
 	"""Signed less than"""
-	return (MI(r) and (not VS(r))) or ((not MI(r)) and VS(r))
+	return (bool(r[r.CPSR] & r.N) and (not bool(r[r.CPSR] & r.V))) or ((not bool(r[r.CPSR] & r.N)) and bool(r[r.CPSR] & r.V))
 
+@promise.sensible()
+@promise.pure()
 def GT(r):
 	"""Signed greater than"""
-	return (not EQ(r)) and (GE(r))
+	return (not bool(r[r.CPSR] & r.Z)) and ((bool(r[r.CPSR] & r.N) and bool(r[r.CPSR] & r.V)) or ((not bool(r[r.CPSR] & r.N)) and (not bool(r[r.CPSR] & r.V))))
 
+@promise.sensible()
+@promise.pure()
 def LE(r):
 	"""Signed less than or equal"""
-	return EQ(r) or LT(r)
+	return bool(r[r.CPSR] & r.Z) or (bool(r[r.CPSR] & r.N) and (not bool(r[r.CPSR] & r.V))) or ((not bool(r[r.CPSR] & r.N)) and bool(r[r.CPSR] & r.V))
 
+@promise.sensible()
+@promise.pure()
 def AL(R):
 	"""Always"""
 	return True

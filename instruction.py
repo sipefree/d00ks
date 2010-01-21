@@ -23,8 +23,9 @@ an instruction needs to execute.
 
 from ctypes import c_uint
 import simulator
+import promise
 
-class argument(object):
+class Argument(object):
 	"""
 	In ARM, arguments to instructions are usually either
 	registers or immediate values. This is an abstraction
@@ -42,12 +43,19 @@ class argument(object):
 	def __init__(self, isregister, value):
 		self.isregister = isregister
 		self.value = value
+	
+	@promise.sensible()
+	@promise.pure()
 	def get(self, registers):
 		return registers[self.value] if self.isregister else self.value
-		
+	
+	@promise.sensible()
+	@promise.pure()
 	def value(self):
 		return self.value
-		
+	
+	@promise.sensible()
+	@promise.pure()	
 	def __str__(self):
 		if self.isregister:
 			return "R%i"%self.value
@@ -57,32 +65,36 @@ class argument(object):
 
 # helpers for each of the registers, useful
 # for debugging purposes
-R0 = argument(True, 0)
-R1 = argument(True, 1)
-R2 = argument(True, 2)
-R3 = argument(True, 3)
-R4 = argument(True, 4)
-R5 = argument(True, 5)
-R6 = argument(True, 6)
-R7 = argument(True, 7)
-R8 = argument(True, 8)
-R9 = argument(True, 9)
-R10 = argument(True, 10)
-R11 = argument(True, 11)
-R12 = argument(True, 12)
-R13 = argument(True, 13)
-R14 = argument(True, 14)
-R15 = argument(True, 15)
+R0 = Argument(True, 0)
+R1 = Argument(True, 1)
+R2 = Argument(True, 2)
+R3 = Argument(True, 3)
+R4 = Argument(True, 4)
+R5 = Argument(True, 5)
+R6 = Argument(True, 6)
+R7 = Argument(True, 7)
+R8 = Argument(True, 8)
+R9 = Argument(True, 9)
+R10 = Argument(True, 10)
+R11 = Argument(True, 11)
+R12 = Argument(True, 12)
+R13 = Argument(True, 13)
+R14 = Argument(True, 14)
+R15 = Argument(True, 15)
 
+@promise.sensible()
+@promise.pure()
 def reg(i):
 	'Helper function for creating arguments'
-	return argument(True, i)
+	return Argument(True, i)
 
+@promise.sensible()
+@promise.pure()
 def num(i):
 	'Helper function for creating arguments'
-	return argument(False, i)
+	return Argument(False, i)
 	
-class target(object):
+class Target(object):
 	"""
 	Certain things can be loaded from either symbol locations
 	in memory, or as direct constant value. This class
@@ -94,14 +106,18 @@ class target(object):
 	def __init__(self, islabel, value):
 		self.islabel = islabel
 		self.value = value
-	
+
+	@promise.sensible()
+	@promise.pure()
 	def get(self, registers):
 		return registers.symbol_abs(self.value) if self.islabel else self.value
-	
+
+	@promise.sensible()
+	@promise.pure()
 	def __str__(self):
 		return "=%s"%(self.value if self.islabel else "%X"%self.value)
 
-class branchtarget(target):
+class BranchTarget(Target):
 	"""
 	The branch (B) instruction uses targets but the syntax doesn't
 	use the = sign. This is just for pretty printing.
@@ -109,61 +125,76 @@ class branchtarget(target):
 	def __str__(self):
 		return "%s"%(self.value if self.islabel else "%X"%self.value)
 
-
+@promise.sensible()
+@promise.pure()
 def label(lab):
 	'Helper function for creating targets'
-	return target(True, lab)
+	return Target(True, lab)
 
-def immediate(num):
+@promise.sensible()
+@promise.pure()
+def immediate(i):
 	'Helper function for creating targets'
-	return target(False, num)
+	return Target(False, i)
 
-class addrmode(object):
+class Addrmode(object):
 	'''Just a register'''
 	def __init__(self, rn):
 		self.rn = rn
 	def __repr__(self):
 		return str(self)
-	def get(registers):
+	
+	@promise.sensible()
+	@promise.pure()
+	def get(self, registers):
 		return registers[self.rn]
 	def __str__(self):
 		return "[R%i]"%self.rn
 
-class addrmode_immoffset(addrmode):
+class AddrmodeImmoffset(Addrmode):
 	'''Immediate offset'''
-	def __init__(self, rn, shifter):
+	def __init__(self, rn, shifter_operand):
 		self.rn = rn
-		self.shifter = shifter
-	def get(registers):
-		return registers[self.rn] + shifter.apply(registers)
+		self.shifter_operand = shifter_operand
+	
+	@promise.sensible()
+	@promise.pure()
+	def get(self, registers):
+		return registers[self.rn] + self.shifter_operand.get(registers)
 	def __str__(self):
-		return "[R%i, %s]"%(self.rn, self.shifter)
+		return "[R%i, %s]"%(self.rn, self.shifter_operand)
 
-class addrmode_preindexed(addrmode):
+class AddrmodePreindexed(Addrmode):
 	'''Pre-indexed register'''
-	def __init__(self, rn, shifter):
+	def __init__(self, rn, shifter_operand):
 		self.rn = rn
-		self.shifter = shifter
-	def get(registers):
-		registers[self.rn] += shifter.apply(registers)
+		self.shifter_operand = shifter_operand
+	
+	@promise.sensible()
+	@promise.pure()
+	def get(self, registers):
+		registers[self.rn] += self.shifter_operand.get(registers)
 		return registers[self.rn]
 	def __str__(self):
-		return "[R%i, %s]!"%(self.rn, self.shifter)
+		return "[R%i, %s]!"%(self.rn, self.shifter_operand)
 	
-class addrmode_postindexed(addrmode):
+class AddrmodePostindexed(Addrmode):
 	'''Post-indexed register'''
-	def __init__(self, rn, shifter):
+	def __init__(self, rn, shifter_operand):
 		self.rn = rn
-		self.shifter = shifter
-	def get(registers):
+		self.shifter_operand = shifter_operand
+		
+	@promise.sensible()
+	@promise.pure()
+	def get(self, registers):
 		val = registers[self.rn]
-		registers[self.rn] += shifter.apply(registers)
+		registers[self.rn] += self.shifter_operand.get(registers)
 		return val
 	def __str__(self):
-		return "[R%i], %s"%(self.rn, self.shifter)
+		return "[R%i], %s"%(self.rn, str(self.shifter_operand))
 		
 
-class shifter(object):
+class Shifter(object):
 	"""
 	In ARM, the last argument for many instructions can be
 	a so-called shifter operand. This can either be just
@@ -178,16 +209,18 @@ class shifter(object):
 	register, kept in an argument object.
 	"""
 	def __init__(self, rm):
-		super(shifter, self).__init__()
+		super(Shifter, self).__init__()
 		self.rm = rm
 		
-	def apply(self, registers, flags=False):
+	@promise.sensible()
+	@promise.pure()
+	def get(self, registers, flags=False):
 		return self.rm.get(registers)
 	
 	def __str__(self):
 		return str(self.rm)
 
-class ASR(shifter):
+class ASR(Shifter):
 	"""
 	rm, ASR <val>
 	
@@ -203,7 +236,8 @@ class ASR(shifter):
 	def __str__(self):
 		return "%s, ASR %s"%(str(self.rm), str(self.arg))
 
-	def apply(self, registers, flags=False):
+	@promise.sensible()
+	def get(self, registers, flags=False):
 		"""Applies an LSR of amount value to the register"""
 		val = min(self.arg.get(registers), 32)
 		# is the MSB 1?
@@ -222,7 +256,7 @@ class ASR(shifter):
 			registers.flag_set(registers.C, (self.rm.get(registers) >> (val-1)) & 1)
 		return retval
 
-class LSL(shifter):
+class LSL(Shifter):
 	"""
 	rm, LSL <val>
 	
@@ -235,7 +269,8 @@ class LSL(shifter):
 	def __str__(self):
 		return "%s, LSL %s"%(str(self.rm), str(self.arg))
 	
-	def apply(self, registers, flags=False):
+	@promise.sensible()
+	def get(self, registers, flags=False):
 		"""Applies an LSL of amount value to the register"""
 		val = min(self.arg.get(registers), 32)
 		tmp = self.rm.get(registers) << val
@@ -244,7 +279,7 @@ class LSL(shifter):
 			registers.flag_set(registers.C, tmp & (1 << 32))
 		return retval
 
-class LSR(shifter):
+class LSR(Shifter):
 	"""
 	rm, LSR <val>
 	
@@ -257,7 +292,8 @@ class LSR(shifter):
 	def __str__(self):
 		return "%s, LSR %s"%(str(self.rm), str(self.arg))
 
-	def apply(self, registers, flags=False):
+	@promise.sensible()
+	def get(self, registers, flags=False):
 		"""Applies an LSR of amount value to the register"""
 		val = min(self.arg.get(registers), 32)
 		tmp = self.rm.get(registers) >> val
@@ -266,7 +302,7 @@ class LSR(shifter):
 			registers.flag_set(registers.C, (self.rm.get(registers) >> (val-1)) & 1)
 		return retval
 
-class ROR(shifter):
+class ROR(Shifter):
 	"""
 	rm, ROR <val>
 	
@@ -280,7 +316,8 @@ class ROR(shifter):
 	def __str__(self):
 		return "%s, ROR %s"%(str(self.rm), str(self.arg))
 
-	def apply(self, registers, flags=False):
+	@promise.sensible()
+	def get(self, registers, flags=False):
 		"""Applies an ROR of amount value to the register"""
 		val = min(self.arg.get(registers), 32)
 		# select the bits that will be shifted out
@@ -297,7 +334,7 @@ class ROR(shifter):
 			registers.flag_set(registers.C, (self.rm.get(registers) >> (val-1)) & 1)
 		return retval
 
-class RRX(shifter):
+class RRX(Shifter):
 	"""
 	rm, ROR <val>
 	
@@ -310,7 +347,8 @@ class RRX(shifter):
 	def __str__(self):
 		return "%s, RRX %s"%(str(self.rm), str(self.arg))
 
-	def apply(self, registers, flags=False):
+	@promise.sensible()
+	def get(self, registers, flags=False):
 		"""Applies an RRX of amount value to the register"""
 		# i cant think of any better way to do this than 1 shift at a time
 		val = min(self.arg.get(registers))
@@ -329,7 +367,7 @@ class RRX(shifter):
 		return tmp
 		
 
-class instruction(object):
+class Instruction(object):
 	"""
 	Abstract class representing an instruction.
 	
@@ -341,7 +379,7 @@ class instruction(object):
 	carry and overflow and signedness.
 	"""
 	def __init__(self, cond, s, rd, rn,  shifter_operand):
-		super(instruction, self).__init__()
+		super(Instruction, self).__init__()
 		self.cond = cond
 		self.s = s
 		self.rn = rn
@@ -352,22 +390,32 @@ class instruction(object):
 		return "_UNKNOWN_INSTR_%s%s R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 		
+	@promise.sensible()
+	@promise.pure()
 	def signed_pos(self, value):
 		'Is the value positive?'
 		return not (value & (1 << 31))
 	
+	@promise.sensible()
+	@promise.pure()
 	def signed_neg(self, value):
 		'Is the value negative'
 		return value & (1 << 31)
 	
+	@promise.sensible()
+	@promise.pure()
 	def sign(self, value):
 		'What is the sign of value?'
 		return 1 if self.signed_pos(value) else -1
 		
+	@promise.sensible()
+	@promise.pure()
 	def carry_from(self, value):
 		'Is there carry in a 33 bit value?'
 		return 1 if value & (1 << 32) else 0
 	
+	@promise.sensible()
+	@promise.pure()
 	def overflow_from(self, operation, rn, rm, value):
 		"""
 		Overflow occurs when:
@@ -387,7 +435,8 @@ class instruction(object):
 		
 		return False
 			
-	
+	@promise.sensible()
+	@promise.pure()
 	def twos_compliment(self, value):
 		'Returns twos compliment of a value'
 		return ((~value) + 1) & 0xFFFFFFFF
@@ -398,16 +447,17 @@ class instruction(object):
 	def __repr__(self):
 		return str(self)
 		
-class ADC(instruction):
+class ADC(Instruction):
 	"""
 	ADC{cond}{S} <Rd>, <Rn>, <shifter_operand>
 	
 	Add with carry. Adds two values and accumulates it with
 	the current value of the carry bit.
 	"""
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			rm = self.shifter_operand.apply(registers)
+			rm = self.shifter_operand.get(registers)
 			tmp = rm + self.rn.get(registers) + (1 if registers.flag_get(registers.C) else 0)
 			registers[self.rd] = tmp
 			if self.s:
@@ -420,15 +470,16 @@ class ADC(instruction):
 		return "ADC%s%s R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 				
-class ADD(instruction):
+class ADD(Instruction):
 	"""
 	ADD{cond}{S} <Rd>, <Rn>, <shifter_operand>
 	
 	Adds two values.
 	"""
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			rm = self.shifter_operand.apply(registers)
+			rm = self.shifter_operand.get(registers)
 			tmp = rm + self.rn.get(registers)
 			registers[self.rd] = tmp
 			if self.s:
@@ -441,15 +492,16 @@ class ADD(instruction):
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 		
 
-class AND(instruction):
+class AND(Instruction):
 	"""
 	AND{cond}{S} <Rd>, <Rn>, <shifter_operand>
 	
 	Calculates binary AND of two values.
 	"""
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			rm = self.shifter_operand.apply(registers, flags = self.s)
+			rm = self.shifter_operand.get(registers, flags = self.s)
 			tmp = rm & self.rn.get(registers)
 			registers[self.rd] = tmp
 			if self.s:
@@ -461,7 +513,7 @@ class AND(instruction):
 		return "AND%s%s R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 
-class B(instruction):
+class B(Instruction):
 	"""
 	B{L}{cond} <target_address>
 	
@@ -472,6 +524,7 @@ class B(instruction):
 		self.cond = cond
 		self.target = target
 	
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
 			if self.link:
@@ -482,15 +535,16 @@ class B(instruction):
 		return "B%s%s %s"%\
 			("L" if self.link else "", self.cond.__name__, str(self.target))
 	
-class BIC(instruction):
+class BIC(Instruction):
 	"""
 	BIC{cond}{S} <Rd>, <Rn>, <shifter_operand>
 	
 	Clear the bits specified by shifter_operand in Rn.
 	"""
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			rm = self.shifter_operand.apply(registers, flags = self.s)
+			rm = self.shifter_operand.get(registers, flags = self.s)
 			print "rm: 0x%X"%rm
 			neg = ~rm & 0xFFFFFFFF
 			print "~rm: 0x%X"%neg
@@ -506,30 +560,32 @@ class BIC(instruction):
 		return "BIC%s%s R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 
-class BKPT(instruction):
+class BKPT(Instruction):
 	def __init__(self):
 		pass
+	@promise.sensible()
 	def execute(self, registers):
 		raise simulator.Breakpoint()
 
 class BX(B):
 	pass
 
-class CMN(instruction):
+class CMN(Instruction):
 	"""
 	CMN{cond} Rn, <shifter_operand>
 	
 	Compare negative.
 	"""
 	def __init__(self, cond, rn, shifter_operand):
-		super(instruction, self).__init__()
+		super(Instruction, self).__init__()
 		self.cond = cond
 		self.rn = rn
 		self.shifter_operand = shifter_operand
 
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			rm = self.shifter_operand.apply(registers)
+			rm = self.shifter_operand.get(registers)
 			alu_out = self.rn.get(registers) + rm
 			registers.flag_set(registers.N, alu_out & (1 << 31))
 			registers.flag_set(registers.Z, (alu_out & 0xFFFFFFFF) == 0) # force 32 bit mode
@@ -540,21 +596,22 @@ class CMN(instruction):
 		return "CMN%s %s, %s"%\
 			(self.cond.__name__, str(self.rn), str(self.shifter_operand))
 
-class CMP(instruction):
+class CMP(Instruction):
 	"""
 	CMP{cond} <Rn>, <shifter_operand>
 	
 	Compare.
 	"""
 	def __init__(self, cond, rn, shifter_operand):
-		super(instruction, self).__init__()
+		super(Instruction, self).__init__()
 		self.cond = cond
 		self.rn = rn
 		self.shifter_operand = shifter_operand
 	
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			rm = self.shifter_operand.apply(registers)
+			rm = self.shifter_operand.get(registers)
 			alu_out = self.rn.get(registers) - rm
 			registers.flag_set(registers.N, alu_out & (1 << 31))
 			registers.flag_set(registers.Z, (alu_out & 0xFFFFFFFF) == 0) # force 32 bit mode
@@ -565,15 +622,16 @@ class CMP(instruction):
 		return "CMP%s %s, %s"%\
 			(self.cond.__name__, str(self.rn), str(self.shifter_operand))
 	
-class EOR(instruction):
+class EOR(Instruction):
 	"""
 	EOR{cond}{S} <Rd>, <Rn>, <shifter_operand>
 	
 	Exclusive-OR
 	"""
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			rm = self.shifter_operand.apply(registers, flags = self.s)
+			rm = self.shifter_operand.get(registers, flags = self.s)
 			tmp = rm ^ self.rn.get(registers)
 			registers[self.rd] = tmp
 			if self.s:
@@ -585,25 +643,135 @@ class EOR(instruction):
 		return "EOR%s%s R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 
-class LDM(instruction):
+class LDM(Instruction):
 	pass
 
-class LDR(instruction):
-	pass
+class LDR(Instruction):
+	"""
+	LDR{<cond>} <Rd>, <addressing_mode>
 	
-class LDRB(instruction):
-	pass
+	Load-register
+	"""
+	def __init__(self, cond, rd, addr_mode):
+		self.cond = cond
+		self.rd = rd
+		self.addr_mode = addr_mode
+	
+	@promise.sensible()
+	def execute(self, registers):
+		if self.cond(registers):
+			addr = self.addr_mode.get(registers)
+			if type(self.addr_mode) == Target:
+				registers[self.rd] = addr
+			else:
+				word = registers.memory.ldrw(addr)
+				registers[self.rd] = word
+	
+	def __str__(self):
+		return "LDR%s R%i, %s"%\
+			(self.cond.__name__, self.rd, str(self.addr_mode))
+	
+class LDRB(Instruction):
+	"""
+	LDR{<cond>}B <Rd>, <addressing_mode>
+	
+	Load-register
+	"""
+	def __init__(self, cond, rd, addr_mode):
+		self.cond = cond
+		self.rd = rd
+		self.addr_mode = addr_mode
+		if type(addr_mode) == Target:
+			raise SyntaxError("LDRB: Psuedoinstruction only allowed in word-form. (Must use LDR instead)")
+	
+	@promise.sensible()
+	def execute(self, registers):
+		if self.cond(registers):
+			addr = self.addr_mode.get(registers)
+			byte = registers.memory.ldrb(addr)
+			registers[self.rd] = byte
+	
+	def __str__(self):
+		return "LDR%sB R%i, %s"%\
+			(self.cond.__name__, self.rd, str(self.addr_mode))
 
-class LDRH(instruction):
-	pass
+class LDRH(Instruction):
+	"""
+	LDR{<cond>}H <Rd>, <addressing_mode>
+	
+	Load-register
+	"""
+	def __init__(self, cond, rd, addr_mode):
+		self.cond = cond
+		self.rd = rd
+		self.addr_mode = addr_mode
+		if type(addr_mode) == Target:
+			raise SyntaxError("LDRB: Psuedoinstruction only allowed in word-form. (Must use LDR instead)")
+	
+	@promise.sensible()
+	def execute(self, registers):
+		if self.cond(registers):
+			addr = self.addr_mode.get(registers)
+			hw = registers.memory.ldrh(addr)
+			registers[self.rd] = byte
+			
+	def __str__(self):
+		return "LDR%sH R%i, %s"%\
+			(self.cond.__name__, self.rd, str(self.addr_mode))
 
-class LDSB(instruction):
-	pass
+class LDSB(Instruction):
+	"""
+	LDR{<cond>}SB <Rd>, <addressing_mode>
+	
+	Load-register
+	"""
+	def __init__(self, cond, rd, addr_mode):
+		self.cond = cond
+		self.rd = rd
+		self.addr_mode = addr_mode
+		if type(addr_mode) == Target:
+			raise SyntaxError("LDRB: Psuedoinstruction only allowed in word-form. (Must use LDR instead)")
+	
+	@promise.sensible()
+	def execute(self, registers):
+		if self.cond(registers):
+			addr = self.addr_mode.get(registers)
+			byte = registers.memory.ldrb(addr)
+			if byte & 0x80:
+				byte = byte | 0xFFFFFF00
+			registers[self.rd] = byte
+	
+	def __str__(self):
+		return "LDR%sSB R%i, %s"%\
+			(self.cond.__name__, self.rd, str(self.addr_mode))
 
-class LDSH(instruction):
-	pass
+class LDSH(Instruction):
+	"""
+	LDR{<cond>}SB <Rd>, <addressing_mode>
+	
+	Load-register
+	"""
+	def __init__(self, cond, rd, addr_mode):
+		self.cond = cond
+		self.rd = rd
+		self.addr_mode = addr_mode
+		if type(addr_mode) == Target:
+			raise SyntaxError("LDRB: Psuedoinstruction only allowed in word-form. (Must use LDR instead)")
+	
+	@promise.sensible()
+	def execute(self, registers):
+		if self.cond(registers):
+			addr = self.addr_mode.get(registers)
+			hw = registers.memory.ldrh(addr)
+			if hw & 0x8000:
+				hw = hw | 0xFFFF0000
+			registers[self.rd] = hw
+	
+	def __str__(self):
+		return "LDR%sSH R%i, %s"%\
+			(self.cond.__name__, self.rd, str(self.addr_mode))
 
-class MLA(instruction):
+class MLA(Instruction):
 	"""
 	MLA{cond}{S} <Rd>, <Rm>, <Rs>, <Rn>
 	
@@ -617,6 +785,7 @@ class MLA(instruction):
 		self.rm = rm
 		self.rs = rs
 	
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
 			tmp = (self.rm.get(registers) * self.rs.get(registers) + self.rn.get(registers))
@@ -629,7 +798,7 @@ class MLA(instruction):
 		return "MLA%s%s R%i, %s, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rm), str(self.rs), str(self.rn))
 
-class MOV(instruction):
+class MOV(Instruction):
 	"""
 	MOV{cond}{S} <Rd>, <shifter_operand>
 	
@@ -640,9 +809,11 @@ class MOV(instruction):
 		self.s = s
 		self.rd = rd
 		self.shifter_operand = shifter_operand
+	
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			registers[self.rd] = self.shifter_operand.apply(registers, flags=self.s)
+			registers[self.rd] = self.shifter_operand.get(registers, flags=self.s)
 			if self.s:
 				registers.flag_set(registers.N, registers[self.rd] & (1 << 31))
 				registers.flag_set(registers.Z, registers[self.rd] == 0)
@@ -652,13 +823,13 @@ class MOV(instruction):
 		return "MOV%s%s R%i, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.shifter_operand))
 
-class MRS(instruction):
+class MRS(Instruction):
 	pass
 
-class MSR(instruction):
+class MSR(Instruction):
 	pass
 
-class MUL(instruction):
+class MUL(Instruction):
 	"""
 	MUL{cond}{S} <Rd>, <Rm>, <Rs>
 	
@@ -671,6 +842,7 @@ class MUL(instruction):
 		self.rm = rm
 		self.rs = rs
 	
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
 			registers[self.rd] = self.rm.get(registers) * self.rs.get(registers)
@@ -682,7 +854,7 @@ class MUL(instruction):
 		return "EOR%s%s R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rm), str(self.rs))
 
-class MVN(instruction):
+class MVN(Instruction):
 	"""
 	MVN{cond}{S} <Rd>, <shifter_operand>
 	
@@ -693,9 +865,11 @@ class MVN(instruction):
 		self.s = s
 		self.rd = rd
 		self.shifter_operand = shifter_operand
+	
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			registers[self.rd] = ~self.shifter_operand.apply(registers, flags=self.s)
+			registers[self.rd] = ~self.shifter_operand.get(registers, flags=self.s)
 			if self.s:
 				registers.flag_set(registers.N, registers[self.rd] & (1 << 31))
 				registers.flag_set(registers.Z, registers[self.rd] == 0)
@@ -705,15 +879,16 @@ class MVN(instruction):
 		return "MVN%s%s R%i, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.shifter_operand))
 
-class ORR(instruction):
+class ORR(Instruction):
 	"""
 	ORR{cond}{S} <Rd>, <Rn>, <shifter_operand>
 	
 	Binary-OR.
 	"""
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			rm = self.shifter_operand.apply(registers, flags = self.s)
+			rm = self.shifter_operand.get(registers, flags = self.s)
 			tmp = rm | self.rn.get(registers)
 			registers[self.rd] = tmp
 			if self.s:
@@ -725,15 +900,16 @@ class ORR(instruction):
 		return "ORR%s%s R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 
-class RSB(instruction):
+class RSB(Instruction):
 	"""
 	RSB{cond}{S} <Rd>, <Rn>, <shifter_operand>
 	
 	Reverse subtract.
 	"""
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			rm = self.shifter_operand.apply(registers)
+			rm = self.shifter_operand.get(registers)
 			tmp = rm - self.rn.get(registers)
 			registers[self.rd] = tmp
 			if self.s:
@@ -746,15 +922,16 @@ class RSB(instruction):
 		return "RSB%s%s R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 
-class RSC(instruction):
+class RSC(Instruction):
 	"""
 	RSC{cond}{S} <Rd>, <Rn>, <shifter_operand>
 	
 	Reverse subtract with carry.
 	"""
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			rm = self.shifter_operand.apply(registers)
+			rm = self.shifter_operand.get(registers)
 			tmp = rm - self.rn.get(registers) - (0 if registers.flag_get(registers.C) else 1)
 			registers[self.rd] = tmp
 			if self.s:
@@ -767,15 +944,16 @@ class RSC(instruction):
 		return "RSC%s%s R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 
-class SBC(instruction):
+class SBC(Instruction):
 	"""
 	SBC{cond}{S} <Rd>, <Rn>, <shifter_operand>
 	
 	Subtract with carry.
 	"""
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			rm = self.shifter_operand.apply(registers)
+			rm = self.shifter_operand.get(registers)
 			tmp = self.rn.get(registers) - rm - (0 if registers.flag_get(registers.C) else 1)
 			registers[self.rd] = tmp
 			if self.s:
@@ -788,7 +966,7 @@ class SBC(instruction):
 		return "SBC%s%s R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 
-class SMLAL(instruction):
+class SMLAL(Instruction):
 	"""
 	SMLAL{cond}{S} <RdLo>, <RdHi>, <Rm>, <Rs>
 	
@@ -802,6 +980,7 @@ class SMLAL(instruction):
 		self.rm = rm
 		self.rs = rs
 
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
 			registers[self.rdlo] = ((self.rm.get(registers) * self.rs.get(registers)) & 0xFFFFFFFF)\
@@ -816,7 +995,7 @@ class SMLAL(instruction):
 		return "SMLAL%s%s R%i, R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rdlo, self.rdhi, str(self.rm), str(self.rs))
 
-class SMULL(instruction):
+class SMULL(Instruction):
 	"""
 	SMULL{cond}{S} <RdLo>, <RdHi>, <Rm>, <Rs>
 	
@@ -830,6 +1009,7 @@ class SMULL(instruction):
 		self.rm = rm
 		self.rs = rs
 
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
 			registers[self.rdlo] = ((self.rm.get(registers) * self.rs.get(registers)) & 0xFFFFFFFF)
@@ -842,27 +1022,28 @@ class SMULL(instruction):
 		return "SMULL%s%s R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rdlo, self.rdhi, str(self.rm), str(self.rs))
 
-class STM(instruction):
+class STM(Instruction):
 	pass
 
-class STR(instruction):
+class STR(Instruction):
 	pass
 
-class STRB(instruction):
+class STRB(Instruction):
 	pass
 
-class STRH(instruction):
+class STRH(Instruction):
 	pass
 
-class SUB(instruction):
+class SUB(Instruction):
 	"""
 	SUB{cond}{S} <Rd>, <Rn>, <shifter_operand>
 	
 	Subtract.
 	"""
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			rm = self.shifter_operand.apply(registers)
+			rm = self.shifter_operand.get(registers)
 			tmp = self.rn.get(registers) - rm
 			registers[self.rd] = tmp
 			if self.s:
@@ -875,13 +1056,13 @@ class SUB(instruction):
 		return "SUB%s%s R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rd, str(self.rn), str(self.shifter_operand))
 				
-class SWP(instruction):
+class SWP(Instruction):
 	pass
 
-class SWPB(instruction):
+class SWPB(Instruction):
 	pass
 
-class TEQ(instruction):
+class TEQ(Instruction):
 	"""
 	TEQ{cond} <Rn>, <shifter_operand>
 	
@@ -892,9 +1073,10 @@ class TEQ(instruction):
 		self.rn = rn
 		self.shifter_operand = shifter_operand
 
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			rm = self.shifter_operand.apply(registers, flags=True)
+			rm = self.shifter_operand.get(registers, flags=True)
 			alu_out = rm ^ self.rn.get(registers)
 			registers.flag_set(registers.N, alu_out & (1 << 31))
 			registers.flag_set(registers.Z, (alu_out & 0xFFFFFFFF) == 0) # force 32 bit mode
@@ -903,7 +1085,7 @@ class TEQ(instruction):
 		return "TEQ%s %s, %s"%\
 			(self.cond.__name__, str(self.rn), str(self.shifter_operand))
 
-class TST(instruction):
+class TST(Instruction):
 	"""
 	TST{cond} <Rn>, <shifter_operand>
 	
@@ -914,9 +1096,10 @@ class TST(instruction):
 		self.rn = rn
 		self.shifter_operand = shifter_operand
 
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
-			rm = self.shifter_operand.apply(registers, flags=True)
+			rm = self.shifter_operand.get(registers, flags=True)
 			alu_out = rm & self.rn.get(registers)
 			registers.flag_set(registers.N, alu_out & (1 << 31))
 			registers.flag_set(registers.Z, (alu_out & 0xFFFFFFFF) == 0) # force 32 bit mode
@@ -925,7 +1108,7 @@ class TST(instruction):
 		return "TST%s %s, %s"%\
 			(self.cond.__name__, str(self.rn), str(self.shifter_operand))
 
-class UMLAL(instruction):
+class UMLAL(Instruction):
 	"""
 	UMLAL{cond}{S} <RdLo>, <RdHi>, <Rm>, <Rs>
 	
@@ -939,6 +1122,7 @@ class UMLAL(instruction):
 		self.rm = rm
 		self.rs = rs
 
+	@promise.sensible()
 	def execute(self, registers):
 		# FIXME: difference between this and UMLAL?
 		if self.cond(registers):
@@ -954,7 +1138,7 @@ class UMLAL(instruction):
 			return "UMLAL%s%s R%i, %s, %s"%\
 				(self.cond.__name__, "S" if self.s else "", self.rdlo, self.rdhi, str(self.rm), str(self.rs))
 
-class UMULL(instruction):
+class UMULL(Instruction):
 	"""
 	UMULL{cond}{S} <RdLo>, <RdHi>, <Rm>, <Rs>
 	
@@ -968,6 +1152,7 @@ class UMULL(instruction):
 		self.rm = rm
 		self.rs = rs
 
+	@promise.sensible()
 	def execute(self, registers):
 		if self.cond(registers):
 			registers[self.rdlo] = ((self.rm.get(registers) * self.rs.get(registers)) & 0xFFFFFFFF)

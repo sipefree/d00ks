@@ -27,10 +27,11 @@ import struct
 class MemoryError(Exception):
 	pass
 
-class store(object):
-	pass
+class Store(object):
+	def __repr__(self):
+		return str(self)
 
-class DCB(store):
+class DCB(Store):
 	"""Represents a DCB operation"""
 	def __init__(self, dcb_list):
 		super(DCB, self).__init__()
@@ -43,6 +44,7 @@ class DCB(store):
 				char = c_ubyte(item)
 				char = chr(char.value)
 				self.bytes += char
+	
 	def size(self):
 		return len(self.bytes)
 	
@@ -51,20 +53,20 @@ class DCB(store):
 			byte = ord(byte)
 			mem.strb(addr, byte)
 			addr += 1
+	def __str__(self):
+		return "DCB " + repr(self.bytes)
 
-class SPACE(store):
-	"""REpresents a SPACE operation"""
+class SPACE(Store):
+	"""Represents a SPACE operation"""
 	def __init__(self, length):
 		super(SPACE, self).__init__()
 		self.length = length
 	def size(self):
 		return self.length
 	def store(self, mem, addr):
-		for i in range(addr, addr + self.length):
-			mem.strb(addr, 0xFF)
-			addr += 1
+		pass
 
-class memory(object):
+class Memory(object):
 	"""
 	Represents the RAM of a program.
 	
@@ -72,10 +74,19 @@ class memory(object):
 	by the python ctypes module.
 	"""
 	def __init__(self, size=1024):
-		super(memory, self).__init__()
+		super(Memory, self).__init__()
 		self.size = size
 		self.buffer = create_string_buffer(size)
 		self.startaddr = 0xA1000000
+		self.debugmode = False
+		self.debug_clean()
+	
+	def set_debugmode(self, boolean):
+		self.debugmode = boolean
+	
+	def debug_clean(self):
+		self.readaccesses = []
+		self.writeaccesses = []
 	
 	def debug(self):
 		"""
@@ -107,6 +118,8 @@ class memory(object):
 		byte = byte.value & 0xFF
 		addr = self.realaddr(addr)
 		struct.pack_into("B", self.buffer, addr, byte)
+		if self.debugmode:
+			self.writeaccesses.append(addr)
 	
 	def strh(self, addr, hw):
 		"""Store halfword"""
@@ -116,6 +129,9 @@ class memory(object):
 		hw = hw.value & 0xFFFF
 		addr = self.realaddr(addr)
 		struct.pack_into("H", self.buffer, addr, hw)
+		if self.debugmode:
+			self.writeaccesses.append(addr)
+			self.writeaccesses.append(addr+1)
 		
 	def strw(self, addr, word):
 		"""Store word"""
@@ -125,11 +141,19 @@ class memory(object):
 		word = word.value & 0xFFFFFFFF
 		addr = self.realaddr(addr)
 		struct.pack_into("I", self.buffer, addr, word)
+		if self.debugmode:
+			self.writeaccesses.append(addr)
+			self.writeaccesses.append(addr+1)
+			self.writeaccesses.append(addr+2)
+			self.writeaccesses.append(addr+3)
+		
 	
 	def ldrb(self, addr):
 		"""Load byte"""
 		addr = self.realaddr(addr)
 		(val,) = struct.unpack_from("B", self.buffer, addr)
+		if self.debugmode:
+			self.readaccesses.append(addr)
 		return val
 	
 	def ldrh(self, addr):
@@ -138,6 +162,9 @@ class memory(object):
 			raise MemoryError("Halfword reads must be halfword-aligned!")
 		addr = self.realaddr(addr)
 		(val,) = struct.unpack_from("H", self.buffer, addr)
+		if self.debugmode:
+			self.readaccesses.append(addr)
+			self.readaccesses.append(addr+1)
 		return val
 	
 	def ldrw(self, addr):
@@ -146,5 +173,14 @@ class memory(object):
 			raise MemoryError("Word stores must be word-aligned!")
 		addr = self.realaddr(addr)
 		(val,) = struct.unpack_from("I", self.buffer, addr)
+		if self.debugmode:
+			self.readaccesses.append(addr)
+			self.readaccesses.append(addr+1)
+			self.readaccesses.append(addr+2)
+			self.readaccesses.append(addr+3)
 		return val
+	
+	def range_to_list(self, addr, length):
+		"""Return a range of memory as a list of bytes"""
+		return [self.ldrb(x) for x in range(addr, length)]
 

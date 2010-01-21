@@ -342,7 +342,7 @@ def p_cmp_(p):
 # def p_cpy(p):
 # 	'command : cpy_cmd argument argument'
 # 	(cmd, con, s) = p[1]
-# 	p[0] = instruction.MOV(con, False, p[2].value, instruction.shifter(p[3]))
+# 	p[0] = instruction.MOV(con, False, p[2].value, instruction.Shifter(p[3]))
 # 
 # def p_cpyc(p):
 # 	'cpy_cmd : CPY condition'
@@ -382,6 +382,275 @@ def p_eorc(p):
 ######
 # LDR
 ######
+def p_ldr(p):
+	'command : ldr_cmd argument addrmode'
+	(cmd, con) = p[1]
+	p[0] = instruction.LDR(con, p[2].value, p[3])
+
+def p_ldrc(p):
+	'ldr_cmd : LDR condition'
+	p[0] = (p[1], p[2])
+
+def p_ldr_(p):
+	'ldr_cmd : LDR'
+	p[0] = (p[1], cond.AL)
+
+#######
+## LDRB
+#######
+
+def p_ldrb(p):
+	'command : ldrb_cmd argument addrmode'
+	(cmd, con) = p[1]
+	p[0] = instruction.LDRB(con, p[2].value, p[3])
+
+def p_ldrb_al(p):
+	'ldrb_cmd : LDRALB'
+	p[0] = (p[1], cond.AL)
+def p_ldrb_cc(p):        
+	'ldrb_cmd : LDRCCB'  
+	p[0] = (p[1], cond.CC)
+def p_ldrb_cs(p):        
+	'ldrb_cmd : LDRCSB'  
+	p[0] = (p[1], cond.CS)
+def p_ldrb_eq(p):        
+	'ldrb_cmd : LDREQB'  
+	p[0] = (p[1], cond.EQ)
+def p_ldrb_ge(p):        
+	'ldrb_cmd : LDRGEB'  
+	p[0] = (p[1], cond.GE)
+def p_ldrb_gt(p):        
+	'ldrb_cmd : LDRGTB'  
+	p[0] = (p[1], cond.GT)
+def p_ldrb_hi(p):        
+	'ldrb_cmd : LDRHIB'  
+	p[0] = (p[1], cond.HI)
+def p_ldrb_hs(p):        
+	'ldrb_cmd : LDRHSB'  
+	p[0] = (p[1], cond.HS)
+def p_ldrb_le(p):        
+	'ldrb_cmd : LDRLEB'  
+	p[0] = (p[1], cond.LE)
+def p_ldrb_lo(p):        
+	'ldrb_cmd : LDRLOB'  
+	p[0] = (p[1], cond.LO)
+def p_ldrb_ls(p):        
+	'ldrb_cmd : LDRLSB'  
+	p[0] = (p[1], cond.LS)
+def p_ldrb_lt(p):        
+	'ldrb_cmd : LDRLTB'  
+	p[0] = (p[1], cond.LT)
+def p_ldrb_mi(p):        
+	'ldrb_cmd : LDRMIB'  
+	p[0] = (p[1], cond.MI)
+def p_ldrb_ne(p):        
+	'ldrb_cmd : LDRNEB'  
+	p[0] = (p[1], cond.NE)
+def p_ldrb_pl(p):        
+	'ldrb_cmd : LDRPLB'  
+	p[0] = (p[1], cond.PL)
+def p_ldrb_vc(p):        
+	'ldrb_cmd : LDRVCB'  
+	p[0] = (p[1], cond.VC)
+def p_ldrb_vs(p):        
+	'ldrb_cmd : LDRVSB'  
+	p[0] = (p[1], cond.VS)
+def p_ldrb_(p):          
+	'ldrb_cmd : LDRB'    
+	p[0] = (p[1], cond.AL)
+	
+#######
+## LDRSB
+#######
+
+def p_ldrsb_tar(p):
+	'command : ldrsb_cmd argument addrmode'
+	(cmd, con) = p[1]
+	p[0] = instruction.LDRSB(con, p[2].value, p[3])
+
+
+def p_ldrsb_al(p):
+	'ldrsb_cmd : LDRALSB'
+	p[0] = (p[1], cond.AL)
+def p_ldrsb_cc(p):        
+	'ldrsb_cmd : LDRCCSB'  
+	p[0] = (p[1], cond.CC)
+def p_ldrsb_cs(p):        
+	'ldrsb_cmd : LDRCSSB'  
+	p[0] = (p[1], cond.CS)
+def p_ldrsb_eq(p):        
+	'ldrsb_cmd : LDREQSB'  
+	p[0] = (p[1], cond.EQ)
+def p_ldrsb_ge(p):        
+	'ldrsb_cmd : LDRGESB'  
+	p[0] = (p[1], cond.GE)
+def p_ldrsb_gt(p):        
+	'ldrsb_cmd : LDRGTSB'  
+	p[0] = (p[1], cond.GT)
+def p_ldrsb_hi(p):        
+	'ldrsb_cmd : LDRHISB'  
+	p[0] = (p[1], cond.HI)
+def p_ldrsb_hs(p):        
+	'ldrsb_cmd : LDRHSSB'  
+	p[0] = (p[1], cond.HS)
+def p_ldrsb_le(p):        
+	'ldrsb_cmd : LDRLESB'  
+	p[0] = (p[1], cond.LE)
+def p_ldrsb_lo(p):        
+	'ldrsb_cmd : LDRLOSB'  
+	p[0] = (p[1], cond.LO)
+def p_ldrsb_ls(p):        
+	'ldrsb_cmd : LDRLSSB'  
+	p[0] = (p[1], cond.LS)
+def p_ldrsb_lt(p):        
+	'ldrsb_cmd : LDRLTSB'  
+	p[0] = (p[1], cond.LT)
+def p_ldrsb_mi(p):        
+	'ldrsb_cmd : LDRMISB'  
+	p[0] = (p[1], cond.MI)
+def p_ldrsb_ne(p):        
+	'ldrsb_cmd : LDRNESB'  
+	p[0] = (p[1], cond.NE)
+def p_ldrsb_pl(p):        
+	'ldrsb_cmd : LDRPLSB'  
+	p[0] = (p[1], cond.PL)
+def p_ldrsb_vc(p):        
+	'ldrsb_cmd : LDRVCSB'  
+	p[0] = (p[1], cond.VC)
+def p_ldrsb_vs(p):        
+	'ldrsb_cmd : LDRVSSB'  
+	p[0] = (p[1], cond.VS)
+def p_ldrsb_(p):          
+	'ldrsb_cmd : LDRSB'    
+	p[0] = (p[1], cond.AL)
+
+######
+# LDRH
+######
+
+def p_ldrh_tar(p):
+	'command : ldrh_cmd argument addrmode'
+	(cmd, con) = p[1]
+	p[0] = instruction.LDRH(con, p[2].value, p[3])
+
+def p_ldrh_al(p):
+	'ldrh_cmd : LDRALH'
+	p[0] = (p[1], cond.AL)
+def p_ldrh_cc(p):        
+	'ldrh_cmd : LDRCCH'  
+	p[0] = (p[1], cond.CC)
+def p_ldrh_cs(p):        
+	'ldrh_cmd : LDRCSH'  
+	p[0] = (p[1], cond.CS)
+def p_ldrh_eq(p):        
+	'ldrh_cmd : LDREQH'  
+	p[0] = (p[1], cond.EQ)
+def p_ldrh_ge(p):        
+	'ldrh_cmd : LDRGEH'  
+	p[0] = (p[1], cond.GE)
+def p_ldrh_gt(p):        
+	'ldrh_cmd : LDRGTH'  
+	p[0] = (p[1], cond.GT)
+def p_ldrh_hi(p):        
+	'ldrh_cmd : LDRHIH'  
+	p[0] = (p[1], cond.HI)
+def p_ldrh_hs(p):        
+	'ldrh_cmd : LDRHSH'  
+	p[0] = (p[1], cond.HS)
+def p_ldrh_le(p):        
+	'ldrh_cmd : LDRLEH'  
+	p[0] = (p[1], cond.LE)
+def p_ldrh_lo(p):        
+	'ldrh_cmd : LDRLOH'  
+	p[0] = (p[1], cond.LO)
+def p_ldrh_ls(p):        
+	'ldrh_cmd : LDRLSH'  
+	p[0] = (p[1], cond.LS)
+def p_ldrh_lt(p):        
+	'ldrh_cmd : LDRLTH'  
+	p[0] = (p[1], cond.LT)
+def p_ldrh_mi(p):        
+	'ldrh_cmd : LDRMIH'  
+	p[0] = (p[1], cond.MI)
+def p_ldrh_ne(p):        
+	'ldrh_cmd : LDRNEH'  
+	p[0] = (p[1], cond.NE)
+def p_ldrh_pl(p):        
+	'ldrh_cmd : LDRPLH'  
+	p[0] = (p[1], cond.PL)
+def p_ldrh_vc(p):        
+	'ldrh_cmd : LDRVCH'  
+	p[0] = (p[1], cond.VC)
+def p_ldrh_vs(p):        
+	'ldrh_cmd : LDRVSH'  
+	p[0] = (p[1], cond.VS)
+def p_ldrh_(p):          
+	'ldrh_cmd : LDRH'    
+	p[0] = (p[1], cond.AL)
+
+######
+# LDRSH
+######
+
+def p_ldrsh_tar(p):
+	'command : ldrsh_cmd argument addrmode'
+	(cmd, con) = p[1]
+	p[0] = instruction.LDRSH(con, p[2].value, p[3])
+
+def p_ldrsh_al(p):
+	'ldrsh_cmd : LDRALSH'
+	p[0] = (p[1], cond.AL)
+def p_ldrsh_cc(p):        
+	'ldrsh_cmd : LDRCCSH'  
+	p[0] = (p[1], cond.CC)
+def p_ldrsh_cs(p):        
+	'ldrsh_cmd : LDRCSSH'  
+	p[0] = (p[1], cond.CS)
+def p_ldrsh_eq(p):        
+	'ldrsh_cmd : LDREQSH'  
+	p[0] = (p[1], cond.EQ)
+def p_ldrsh_ge(p):        
+	'ldrsh_cmd : LDRGESH'  
+	p[0] = (p[1], cond.GE)
+def p_ldrsh_gt(p):        
+	'ldrsh_cmd : LDRGTSH'  
+	p[0] = (p[1], cond.GT)
+def p_ldrsh_hi(p):        
+	'ldrsh_cmd : LDRHISH'  
+	p[0] = (p[1], cond.HI)
+def p_ldrsh_hs(p):        
+	'ldrsh_cmd : LDRHSSH'  
+	p[0] = (p[1], cond.HS)
+def p_ldrsh_le(p):        
+	'ldrsh_cmd : LDRLESH'  
+	p[0] = (p[1], cond.LE)
+def p_ldrsh_lo(p):        
+	'ldrsh_cmd : LDRLOSH'  
+	p[0] = (p[1], cond.LO)
+def p_ldrsh_ls(p):        
+	'ldrsh_cmd : LDRLSSH'  
+	p[0] = (p[1], cond.LS)
+def p_ldrsh_lt(p):        
+	'ldrsh_cmd : LDRLTSH'  
+	p[0] = (p[1], cond.LT)
+def p_ldrsh_mi(p):        
+	'ldrsh_cmd : LDRMISH'  
+	p[0] = (p[1], cond.MI)
+def p_ldrsh_ne(p):        
+	'ldrsh_cmd : LDRNESH'  
+	p[0] = (p[1], cond.NE)
+def p_ldrsh_pl(p):        
+	'ldrsh_cmd : LDRPLSH'  
+	p[0] = (p[1], cond.PL)
+def p_ldrsh_vc(p):        
+	'ldrsh_cmd : LDRVCSH'  
+	p[0] = (p[1], cond.VC)
+def p_ldrsh_vs(p):        
+	'ldrsh_cmd : LDRVSSH'  
+	p[0] = (p[1], cond.VS)
+def p_ldrsh_(p):          
+	'ldrsh_cmd : LDRSH'    
+	p[0] = (p[1], cond.AL)
 
 ######
 # MLA
@@ -770,7 +1039,6 @@ def p_umullc(p):
 # target
 ###########
 
-# FIXME: why is target unreachable?
 def p_target_label(p):
 	'target : LABELTARGET'
 	p[0] = p[1]
@@ -789,11 +1057,36 @@ def p_target_immhex(p):
 
 def p_branchtarget_label(p):
 	'branchtarget : LABEL'
-	p[0] = instruction.branchtarget(True, p[1])
+	p[0] = instruction.BranchTarget(True, p[1])
 
 def p_branchtarget_addr(p):
 	'branchtarget : argument'
 	p[0] = p[1]
+	
+###############
+# addrmode
+###############
+
+def p_addrmode_preindexed(p):
+	'addrmode : OPENSQ REGISTER shifter CLOSESQ BANG'
+	p[0] = instruction.AddrmodePreindexed(p[2].value, p[3])
+
+def p_addrmode_immoffset(p):
+	'addrmode : OPENSQ REGISTER shifter CLOSESQ'
+	p[0] = instruction.AddrmodeImmoffset(p[2].value, p[3])
+
+def p_addrmode_postindexed(p):
+	'addrmode : OPENSQ REGISTER CLOSESQ shifter'
+	p[0] = instruction.AddrmodePostindexed(p[2].value, p[4])
+
+def p_addrmode_reg(p):
+	'addrmode : OPENSQ REGISTER CLOSESQ'
+	p[0] = instruction.Addrmode(p[2].value)
+
+def p_addrmode_label(p):
+	'addrmode : target'
+	p[0] = p[1]
+
 
 ###############
 # shifter
@@ -807,7 +1100,9 @@ def p_shifter_arg(p):
 
 def p_shifter_none(p):
 	'shifter : argument'
-	p[0] = instruction.shifter(p[1])
+	p[0] = instruction.Shifter(p[1])
+
+
 
 #############
 # argument
@@ -826,6 +1121,10 @@ def p_argument_r(p):
 	'argument : REGISTER'
 	p[0] = p[1]
 
+def p_argument_c(p):
+	'argument : CHAR'
+	p[0] = p[1]
+
 def p_argument_sp(p):
 	'argument : SP'
 	p[0] = instruction.reg(13)
@@ -837,6 +1136,7 @@ def p_argument_lr(p):
 def p_argument_pc(p):
 	'argument : PC'
 	p[0] = instruction.reg(15)
+
 
 #############
 # condition
@@ -939,7 +1239,7 @@ def p_shift_rrx(p):
 ###############
 def p_directive(p):
 	'directive : AREA LABEL dir_attrlist'
-	p[0] = simulator.area(p[2], p[3])
+	p[0] = simulator.Area(p[2], p[3])
 
 
 ################
@@ -996,12 +1296,6 @@ def p_dcb_item_num(p):
 def p_dcb_item_hexnum(p):
 	'dcb_item : MEMHEXNUM'
 	p[0] = p[1]
-
-############
-# addrmode
-############
-def p_addrmode_label(p):
-	'addrmode : target'
 
 
 def p_error(p):

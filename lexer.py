@@ -53,23 +53,34 @@ reserved = [
 	'BVC',
 	'BVS',
 	
-	'BLAL',
-	'BLCC',
-	'BLCS',
-	'BLEQ',
-	'BLGE',
-	'BLGT',
-	'BLHI',
-	'BLHS',
-	'BLLE',
-	'BLLO',
-	'BLLS',
-	'BLLT',
-	'BLMI',
-	'BLNE',
-	'BLPL',
-	'BLVC',
-	'BLVS',
+	'BLAL','BLCC','BLCS','BLEQ','BLGE',
+	'BLGT','BLHI','BLHS','BLLE','BLLO',
+	'BLLS','BLLT','BLMI','BLNE','BLPL',
+	'BLVC','BLVS',
+
+	'LDRALB','LDRCCB','LDRCSB','LDREQB',
+	'LDRGEB','LDRGTB','LDRHIB','LDRHSB',
+	'LDRLEB','LDRLOB','LDRLSB','LDRLTB',
+	'LDRMIB','LDRNEB','LDRPLB','LDRVCB',
+	'LDRVSB',
+
+	'LDRALH','LDRCCH','LDRCSH','LDREQH',
+	'LDRGEH','LDRGTH','LDRHIH','LDRHSH',
+	'LDRLEH','LDRLOH','LDRLSH','LDRLTH',
+	'LDRMIH','LDRNEH','LDRPLH','LDRVCH',
+	'LDRVSH',
+	
+	'LDRALSB','LDRCCSB','LDRCSSB','LDREQSB',
+	'LDRGESB','LDRGTSB','LDRHISB','LDRHSSB',
+	'LDRLESB','LDRLOSB','LDRLSSB','LDRLTSB',
+	'LDRMISB','LDRNESB','LDRPLSB','LDRVCSB',
+	'LDRVSSB',
+	
+	'LDRALSH','LDRCCSH','LDRCSSH','LDREQSH',
+	'LDRGESH','LDRGTSH','LDRHISH','LDRHSSH',
+	'LDRLESH','LDRLOSH','LDRLSSH','LDRLTSH',
+	'LDRMISH','LDRNESH','LDRPLSH','LDRVCSH',
+	'LDRVSSH',
 	
 	'BIC',
 	'BKPT',
@@ -81,8 +92,8 @@ reserved = [
 	'LDR',
 	'LDRB',
 	'LDRH',
-	'LDSB',
-	'LDSH',
+	'LDRSB',
+	'LDRSH',
 	'LSL',
 	'LSR',
 	'MLA',
@@ -159,19 +170,27 @@ tokens = [
 	'OPENSQ',
 	'CLOSESQ',
 	'STRING',
+	'CHAR',
 	'MEMNUM',
 	'MEMHEXNUM',
+	'BANG',
 	
 ] + reserved
 
 t_OPENSQ = r'\['
 t_CLOSESQ = r'\]'
+t_BANG = r'!'
 
 t_ignore = ' \t,'
 
 def t_STRING(t):
 	r'\"([^\\\n]|(\\.))*?\"'
 	t.value = t.value[1:-1]
+	return t
+
+def t_CHAR(t):
+	r'\#\'.\''
+	t.value = instruction.num(ord(t.value[2:-1]))
 	return t
 
 def t_HEXNUM(t):
@@ -264,6 +283,75 @@ t_BLPL = r'(blpl|BLPL)'
 t_BLVC = r'(blvc|BLVC)'
 t_BLVS = r'(blvs|BLVS)'
 
+t_LDRALB = r'(ldralb|LDRALB)'
+t_LDRCCB = r'(ldrccb|LDRCCB)'
+t_LDRCSB = r'(ldrcsb|LDRCSB)'
+t_LDREQB = r'(ldreqb|LDREQB)'
+t_LDRGEB = r'(ldrgeb|LDRGEB)'
+t_LDRGTB = r'(ldrgtb|LDRGTB)'
+t_LDRHIB = r'(ldrhib|LDRHIB)'
+t_LDRHSB = r'(ldrhsb|LDRHSB)'
+t_LDRLEB = r'(ldrleb|LDRLEB)'
+t_LDRLOB = r'(ldrlob|LDRLOB)'
+t_LDRLSB = r'(ldrlsb|LDRLSB)'
+t_LDRLTB = r'(ldrltb|LDRLTB)'
+t_LDRMIB = r'(ldrmib|LDRMIB)'
+t_LDRNEB = r'(ldrneb|LDRNEB)'
+t_LDRPLB = r'(ldrplb|LDRPLB)'
+t_LDRVCB = r'(ldrvcb|LDRVCB)'
+t_LDRVSB = r'(ldrvsb|LDRVSB)'
+t_LDRALH = r'(ldralh|LDRALH)'
+t_LDRCCH = r'(ldrcch|LDRCCH)'
+t_LDRCSH = r'(ldrcsh|LDRCSH)'
+t_LDREQH = r'(ldreqh|LDREQH)'
+t_LDRGEH = r'(ldrgeh|LDRGEH)'
+t_LDRGTH = r'(ldrgth|LDRGTH)'
+t_LDRHIH = r'(ldrhih|LDRHIH)'
+t_LDRHSH = r'(ldrhsh|LDRHSH)'
+t_LDRLEH = r'(ldrleh|LDRLEH)'
+t_LDRLOH = r'(ldrloh|LDRLOH)'
+t_LDRLSH = r'(ldrlsh|LDRLSH)'
+t_LDRLTH = r'(ldrlth|LDRLTH)'
+t_LDRMIH = r'(ldrmih|LDRMIH)'
+t_LDRNEH = r'(ldrneh|LDRNEH)'
+t_LDRPLH = r'(ldrplh|LDRPLH)'
+t_LDRVCH = r'(ldrvch|LDRVCH)'
+t_LDRVSH = r'(ldrvsh|LDRVSH)'
+t_LDRALSB = r'(ldralsb|LDRALSB)'
+t_LDRCCSB = r'(ldrccsb|LDRCCSB)'
+t_LDRCSSB = r'(ldrcssb|LDRCSSB)'
+t_LDREQSB = r'(ldreqsb|LDREQSB)'
+t_LDRGESB = r'(ldrgesb|LDRGESB)'
+t_LDRGTSB = r'(ldrgtsb|LDRGTSB)'
+t_LDRHISB = r'(ldrhisb|LDRHISB)'
+t_LDRHSSB = r'(ldrhssb|LDRHSSB)'
+t_LDRLESB = r'(ldrlesb|LDRLESB)'
+t_LDRLOSB = r'(ldrlosb|LDRLOSB)'
+t_LDRLSSB = r'(ldrlssb|LDRLSSB)'
+t_LDRLTSB = r'(ldrltsb|LDRLTSB)'
+t_LDRMISB = r'(ldrmisb|LDRMISB)'
+t_LDRNESB = r'(ldrnesb|LDRNESB)'
+t_LDRPLSB = r'(ldrplsb|LDRPLSB)'
+t_LDRVCSB = r'(ldrvcsb|LDRVCSB)'
+t_LDRVSSB = r'(ldrvssb|LDRVSSB)'
+t_LDRALSH = r'(ldralsh|LDRALSH)'
+t_LDRCCSH = r'(ldrccsh|LDRCCSH)'
+t_LDRCSSH = r'(ldrcssh|LDRCSSH)'
+t_LDREQSH = r'(ldreqsh|LDREQSH)'
+t_LDRGESH = r'(ldrgesh|LDRGESH)'
+t_LDRGTSH = r'(ldrgtsh|LDRGTSH)'
+t_LDRHISH = r'(ldrhish|LDRHISH)'
+t_LDRHSSH = r'(ldrhssh|LDRHSSH)'
+t_LDRLESH = r'(ldrlesh|LDRLESH)'
+t_LDRLOSH = r'(ldrlosh|LDRLOSH)'
+t_LDRLSSH = r'(ldrlssh|LDRLSSH)'
+t_LDRLTSH = r'(ldrltsh|LDRLTSH)'
+t_LDRMISH = r'(ldrmish|LDRMISH)'
+t_LDRNESH = r'(ldrnesh|LDRNESH)'
+t_LDRPLSH = r'(ldrplsh|LDRPLSH)'
+t_LDRVCSH = r'(ldrvcsh|LDRVCSH)'
+t_LDRVSSH = r'(ldrvssh|LDRVSSH)'
+
 
 t_BIC = r'(bic|BIC)'
 t_BKPT = r'(bkpt|BKPT)'
@@ -275,8 +363,8 @@ t_LDM = r'(ldm|LDM)'
 t_LDR = r'(ldr|LDR)'
 t_LDRB = r'(ldrb|LDRB)'
 t_LDRH = r'(ldrh|LDRH)'
-t_LDSB = r'(ldsb|LDSB)'
-t_LDSH = r'(ldsh|LDSH)'
+t_LDRSB = r'(ldsb|LDSB)'
+t_LDRSH = r'(ldsh|LDSH)'
 t_LSL = r'(lsl|LSL)'
 t_LSR = r'(lsr|LSR)'
 t_MLA = r'(mla|MLA)'

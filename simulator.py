@@ -26,8 +26,9 @@ import cond
 import instruction
 import register
 import memory
+import promise
 
-class area(object):
+class Area(object):
 	"""Represents an assembler AREA directive"""
 	def __init__(self, label, attrs):
 		self.label = label
@@ -39,13 +40,13 @@ class Breakpoint(Exception):
 	pass
 		
 
-class program(object):
+class Program(object):
 	"""Represents an ARM program."""
 	def __init__(self):
-		super(program, self).__init__()
 		self.code = []
-		self.registers = register.registers()
-		self.memory = memory.memory(1024)
+		self.registers = register.Registers()
+		self.memory = memory.Memory(1024)
+		self.registers.memory = self.memory
 	
 	def compile(self, tuples):
 		"""
@@ -74,7 +75,7 @@ class program(object):
 		
 		
 		for (label,line) in tuples:
-			if type(line) == area:
+			if type(line) == Area:
 				if "CODE" in line.attrs:
 					if "DATA" in line.attrs:
 						raise SyntaxError("AREA %s cannot have both CODE and DATA attrs!"%line.label)
@@ -83,13 +84,13 @@ class program(object):
 					mode = data_s
 				continue
 			if mode == code_s:
-				if isinstance(line, instruction.instruction):
+				if isinstance(line, instruction.Instruction):
 					self.code.append(line)
 					if label:
 						self.registers.symbol_insert(label, code_woffset)
 					code_woffset += 1
 			elif mode == data_s:
-				if isinstance(line, memory.store):
+				if isinstance(line, memory.Store):
 					if label:
 						self.registers.symbol_insert(label, data_boffset)
 					line.store(self.memory, data_boffset)
@@ -101,8 +102,9 @@ class program(object):
 		"""
 		Resets the registers, and by proxy, the program counter.
 		"""
-		self.registers = register.registers()
+		self.registers = register.Registers()
 
+	@promise.sensible()
 	def step(self, debug=False, breaks=False):
 		"""
 		Steps through one instruction.
@@ -115,15 +117,15 @@ class program(object):
 		
 		# fetch/decode
 		instr = self.code[self.registers[self.registers.PC]]
-		if debug:
-			print str(instr)
 		
 		# execute
 		self.registers[self.registers.PC] += 1
 		instr.execute(self.registers)
-		if self.registers.changed != [15] and debug:
-			self.registers.p()
-			self.registers.set_clean()
+		if debug:
+			print str(instr)
+			if self.registers.changed != [15]:
+				self.registers.p()
+				self.registers.set_clean()
 	
 	def run(self):
 		"""

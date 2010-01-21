@@ -20,8 +20,9 @@ Represents the registers in the ARM simulator.
 
 It also stores the symbol table, for easy lookup.
 """
+import promise
 
-class registers(object):
+class Registers(object):
 	"""
 	This registers object is passed around. It contains
 	the registers, stored as a python list, and functions
@@ -55,33 +56,43 @@ class registers(object):
 		self.symbol_table = {}
 		
 		self.changed = []
+		
+		self.memory = None
 	
+	@promise.sensible()
+	@promise.pure()
 	def __getitem__(self, key):
 		return self.regs[key]
 	
-	
+	@promise.sensible()
 	def __setitem__(self, key, value):
 		value = value & 0xFFFFFFFF
 		if self.regs[key] != value:
 			self.regs[key] = value
 			self.changed.append(key)
-		
+	
+	@promise.sensible()
 	def symbol_insert(self, key, index):
 		# TODO: symbol already exists error
 		self.symbol_table[key] = index
 	
+	@promise.sensible()
 	def symbol_abs(self, value):
 		return self.symbol_table[value]
 		
+	@promise.sensible()
 	def flag_set(self, flag, value):
 		if value:
 			self.regs[self.CPSR] |= flag
 		else:
 			self.regs[self.CPSR] &= (~flag)
 	
+	@promise.sensible()
+	@promise.pure()
 	def flag_get(self, flag):
 		return 1 if self.regs[self.CPSR] & flag else 0
 	
+	@promise.sensible()
 	def set_clean(self):
 		self.changed = []
 	
@@ -89,7 +100,10 @@ class registers(object):
 		'Prints the contents of the registers'
 		ret = "registers {\n"
 		for i in range(0, len(self.regs)):
-			ret += "%s	R%i = 0x%08X = %d\n"%("*" if i in self.changed else " ", i, self.regs[i], self.regs[i])
+			ret += "%s	R%i = 0x%08X = %d%s\n"%\
+				("*" if i in self.changed else " ",\
+				i, self.regs[i], self.regs[i],\
+				" = '%c'"%chr(self.regs[i]) if self.regs[i] in range(32, 128) else "")
 		ret += "} "
 		ret += "N = %i, Z = %i, C = %i, V = %i"%(int(self.flag_get(self.N)), int(self.flag_get(self.Z)), int(self.flag_get(self.C)), int(self.flag_get(self.V)))
 		print ret
