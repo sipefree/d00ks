@@ -182,5 +182,5 @@ class Memory(object):
 	
 	def range_to_list(self, addr, length):
 		"""Return a range of memory as a list of bytes"""
-		return [self.ldrb(x) for x in range(addr, length)]
+		return [self.ldrb(x) for x in range(addr, addr+length)]
 

@@ -42,7 +42,7 @@ class registersWindow:
 		a setter method for register window. accepts a list of registers,
 		CPSR and PC """
 		
-		if gb.debugmode: #small, barely necessary performance hack.
+		if gb.debugmode: #small, barely necessary performance hack.paranoia.
 			for r in range(0,len(self.content)):
 				if self.content[r][0] != _regs[r]:
 					self.content[r][1] = True
@@ -62,7 +62,7 @@ class registersWindow:
 
 class memoryWindow:
 	title = "Memory View"
-	dimensions = {'min':(20,20),'resizable':True, 'align':1}
+	dimensions = {'min':(18,5),'resizable':True, 'align':1}
 
 	def __init__(self,position=(2,20),size=dimensions['min']):
 		posx,posy = position
@@ -76,9 +76,28 @@ class memoryWindow:
 	def setStart(self,_start):
 		self.start = _start
 
+		
+	
 	def draw(self):
-		self.content = gb.memory
-
+		# round to the nearest 4 bytes
+		cols = int(self.sizex/8)
+		rows = int(self.sizey-2)
+		depth = cols * rows
+		rawmem = gb.memory.range_to_list(self.start, depth)
+		self.changed = True # temporary measue; needs to be benchmarked first.
+		if self.changed:
+			self.content = ""
+			for r in range(0, rows):
+				 for c in range(0,cols):
+				 	self.content += hex(rawmem[c*r*])
+				 self.content += " "
+				 for c in range(0,cols/2): # cols is going to be a multiple of 4
+				 	self.content += chr(rawmem[c*r]) if rawmem[c*r] >31 and rawmem[c*r] < 127 else "." # experimental NOT  TESTED. (drink time)
+				 self.content +="\n"
+		self.wo.erase()
+		self.wo.addstr(1,1,self.content)
+		self.wo.refresh()
+			 	
 
 class codeWindow:
 	"""displays the code being executed with highliting"""
@@ -133,58 +152,84 @@ def drawpreview(cont):
 	gb.windows['preview'][1] = 1
 
 
+def drawmem(_mem):
+	content,(m_from,m_size) = _mem
+	
+
 def drawall():
 	drawregs([('1', 'fffaaa'),('2', '00000000')])
 	drawcode("this is a \n multiline \n \t block \n of code")
-	drawpreview("and this is a preview of code \n or something..")
+	for mem in gb.memory['visible']:
+		drawmem(mem) 
+		# mem is a tuple consisting of the memory object and a tuple of 
+		# requested range
+	
+	#drawpreview("and this is a preview of code \n or something..")
 	gb.screen.refresh()
 
-def adjustWindows():
-	gb.screen = curses.initscr()
+#def adjustWindows():
+	#gb.screen = curses.initscr()
 	
 def windowResized():
 	sizey,sizex =  gb.screen.getmaxyx()
 	minx,miny =  gb.dimensions['min']
 	while sizex < minx or sizey < miny:
-		errorScreen.content.erase()
-		errorScreen.content.addstr(
-		"Window too small. this version requires a terminal of at least %s x %s characters" %(minx,miny))
-		errorScreen.refresh()
-		sizey,sizex = errorScreen.getmaxyx()
+		gb.screen.clear()
+		gb.screen.addstr("crazy fool, that doesn't even fit!")
+		try:
+			r=(gb.screen.getch())
+			c = chr(r)
+			if c == 'q':
+				quit()
+		#except ValueError:
+		#	if r == curses.KEY_RESIZE:
+				
+		except:
+			pass
 		
-
-def main(stdscr):
-	gb.screen = stdscr
-	gb.curline = 1
-	errorScreen.window = curses.initscr()
-	errorScreen.content = curses.newwin(0,0,2,20)
+		gb.windows['error'].addstr(	"Window too small")
+		gb.windows['error'].refresh()
+		sizey,sizex = gb.screen.getmaxyx()
+	gb.screen.clear()
+	setup()
+	
+def setup():		
+	gb.windows['error'] = curses.newwin(0,0,2,20)
 	gb.windows['registers'] = [curses.newwin(32,20,2,70),0]
 	gb.windows['registers'][0].border()
 	gb.windows['code'] = [curses.newwin(20,60,2,10),0]
 	gb.windows['code'][0].border()
 	gb.windows['preview'] = [curses.newwin(10,60,24,10),0]
 	gb.windows['preview'][0].border()
+
+
+def main(stdscr):
+	gb.screen = stdscr
+	gb.curline = 1
+	setup()
 	gb.output = os.popen("ls ~/sources/","r").read().split("\n")
 	curses.noecho()
 	curses.cbreak()
+	c=''
 	while True:
+		
 		try:
 			r=(gb.screen.getch())
 			c = chr(r)
 		except ValueError:
 			if r == curses.KEY_RESIZE:
 				windowResized()
-				break
-
+				
 		if c == 'l':
 			display()
 		elif c == 'r':
 			drawall()
-		elif c =='t':
-			pass
+		elif c =='q':
+			quit()
 		else:
-			break
+			pass
 	restorescreen()
+	print "quittting!"
 		
 		
 curses.wrapper(main)
