@@ -1,0 +1,38 @@
+	AREA	PushPop, CODE, READONLY
+
+start
+	LDR	R12, =STK_TOP	; sp = TopOfStack
+	LDR	R1, =STRING1
+	
+	LDR	R2, =0
+L1
+	LDRB	R0, [R1], #1
+	CMP	R0, #0
+	BEQ	L2
+	ADD	R2, R2, #1
+	STR	R0, [R12, #-4]!
+	B	L1
+L2
+	LDR	R1, =STRING1
+L3
+	SUBS	R2, R2, #1
+	LDR	R0, [R12], #4
+	STRB	R0, [R1], #1
+	BEQ	L4
+	B	L3
+L4
+	B	stop
+
+
+
+stop	B	stop
+
+	AREA	String, DATA, READWRITE
+STRING1	DCB	"Wednesday",0
+
+	AREA	Stack, DATA, READWRITE
+
+STK_MEM	SPACE	0x300
+STK_TOP	
+
+	END	

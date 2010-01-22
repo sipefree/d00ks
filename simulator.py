@@ -27,6 +27,7 @@ import instruction
 import register
 import memory
 import promise
+import pprint
 
 class Area(object):
 	"""Represents an assembler AREA directive"""
@@ -75,12 +76,26 @@ class Program(object):
 		
 		
 		for (label,line) in tuples:
+			if line == None:
+				if mode == code_s:
+					self.registers.symbol_insert(label, codewoffset)
+				elif mode == data_s:
+					self.registers.symbol_insert(label, data_boffset)
+				else:
+					raise SyntaxError("Label " + label + " used but not in CODE or DATA mode!")
+				continue
 			if type(line) == Area:
 				if "CODE" in line.attrs:
 					if "DATA" in line.attrs:
 						raise SyntaxError("AREA %s cannot have both CODE and DATA attrs!"%line.label)
 					mode = code_s
 				elif "DATA" in line.attrs:
+					# word align please
+					while True:
+						if data_boffset & 0x3:
+							data_boffset += 1
+						else:
+							break
 					mode = data_s
 				continue
 			if mode == code_s:
@@ -105,27 +120,37 @@ class Program(object):
 		self.registers = register.Registers()
 
 	@promise.sensible()
-	def step(self, debug=False, breaks=False):
+	def step(self):
 		"""
 		Steps through one instruction.
 		
 		"""
-		# catch breakpoint
-		if breaks:
-			if self.registers[self.registers.PC] in self.breakpoints:
-				raise Breakpoint()
-		
+		if self.registers[self.registers.PC] in self.breakpoints:
+			raise Breakpoint()
+	
 		# fetch/decode
 		instr = self.code[self.registers[self.registers.PC]]
 		
 		# execute
 		self.registers[self.registers.PC] += 1
 		instr.execute(self.registers)
-		if debug:
-			print str(instr)
-			if self.registers.changed != [15]:
-				self.registers.p()
-				self.registers.set_clean()
+
+	@promise.sensible()
+	def step_debug(self):
+		"""
+		Steps through one instruction.
+		
+		"""
+		# fetch/decode
+		instr = self.code[self.registers[self.registers.PC]]
+		
+		# execute
+		self.registers[self.registers.PC] += 1
+		instr.execute(self.registers)
+		print str(instr)
+		if len(self.registers.changed) > 1:
+			self.registers.p()
+			self.registers.set_clean()
 	
 	def run(self):
 		"""
@@ -134,7 +159,7 @@ class Program(object):
 		"""
 		try:
 			while True:
-				self.step(breaks=True)
+				self.step()
 		except:
 			print "Breakpoint detected!"
 			print str(self.code[self.registers[self.registers.PC]])
@@ -148,13 +173,18 @@ class Program(object):
 			if cmd == "": cmd = lastcmd
 			lastcmd = cmd
 			if cmd == "s":
-				self.step(debug=True)
+				self.step_debug()
 			elif cmd == "q":
 				break
 			elif cmd == "p":
 				self.registers.p()
 			elif cmd == "m":
 				self.memory.debug()
+			elif cmd == "mb":
+				self.memory.debug_char()
 			elif cmd == "c":
 				self.run()
+			elif cmd == "t":
+				for sym in self.registers.symbol_table:
+					print sym + ": " + hex(self.registers.symbol_table[sym])
 	

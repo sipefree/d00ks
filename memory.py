@@ -61,6 +61,8 @@ class SPACE(Store):
 	def __init__(self, length):
 		super(SPACE, self).__init__()
 		self.length = length
+	def __str__(self):
+		return "SPACE " + hex(self.length)
 	def size(self):
 		return self.length
 	def store(self, mem, addr):
@@ -102,6 +104,21 @@ class Memory(object):
 			buf += "%02X"%self.ldrb(addr)
 		print buf
 	
+	def debug_char(self):
+		"""
+		Prints the contents of memory.
+		"""
+		buf = ""
+		for i in range(self.startaddr, self.startaddr + self.size):
+			if i % 32 == 0:
+				buf += "\n0x%X:"%i
+			if i % 4 == 0:
+				buf += " "
+			addr = i #(i - (i%4)) + (4 - (i % 4) - 1)
+			byte = self.ldrb(addr)
+			buf += "%s"%(chr(byte)+' ' if byte in range(65, 128) else ' .')
+		print buf
+	
 	def realaddr(self, addr):
 		"""
 		Calculates the offset in the byte buffer
@@ -123,7 +140,7 @@ class Memory(object):
 	
 	def strh(self, addr, hw):
 		"""Store halfword"""
-		if addr % 2 != 0:
+		if addr & 0x1:
 			raise MemoryError("Halfword stores must be halfword-aligned!")
 		hw = c_ushort(hw)
 		hw = hw.value & 0xFFFF
@@ -135,7 +152,7 @@ class Memory(object):
 		
 	def strw(self, addr, word):
 		"""Store word"""
-		if addr % 4 != 0:
+		if addr & 0x3:
 			raise MemoryError("Word stores must be word-aligned!")
 		word = c_uint(word)
 		word = word.value & 0xFFFFFFFF
@@ -158,7 +175,7 @@ class Memory(object):
 	
 	def ldrh(self, addr):
 		"""Load halfword"""
-		if addr % 2 != 0:
+		if addr & 0x1:
 			raise MemoryError("Halfword reads must be halfword-aligned!")
 		addr = self.realaddr(addr)
 		(val,) = struct.unpack_from("H", self.buffer, addr)
@@ -169,7 +186,7 @@ class Memory(object):
 	
 	def ldrw(self, addr):
 		"""Load word"""
-		if addr % 4 != 0:
+		if addr & 0x3:
 			raise MemoryError("Word stores must be word-aligned!")
 		addr = self.realaddr(addr)
 		(val,) = struct.unpack_from("I", self.buffer, addr)

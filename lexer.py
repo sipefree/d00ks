@@ -222,15 +222,14 @@ t_DCH = r'(dch|DCH)'
 t_SPACE = r'(space|SPACE)'
 
 
+def t_IMMHEXTARGET(t):
+	r'\=0x([A-Fa-f0-9])+'
+	t.value = instruction.immediate(int(t.value[1:], 16))
+	return t
 
 def t_IMMTARGET(t):
 	r'\=\d+'
 	t.value = instruction.immediate(int(t.value[1:]))
-	return t
-
-def t_IMMHEXTARGET(t):
-	r'\=0x[A-Fa-f0-9]+'
-	t.value = instruction.immediate(int(t.value[1:], 16))
 	return t
 
 def t_COMMENT(t):

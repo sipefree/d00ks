@@ -37,6 +37,10 @@ def p_linel(p):
 	'line : LABEL command'
 	p[0] = (p[1], p[2])
 
+def p_linejustlabel(p):
+	'line : LABEL'
+	p[0] = (p[1], None)
+
 def p_line(p):
 	'line : command'
 	p[0] = ('', p[1])

@@ -115,7 +115,7 @@ class Target(object):
 	@promise.sensible()
 	@promise.pure()
 	def __str__(self):
-		return "=%s"%(self.value if self.islabel else "%X"%self.value)
+		return "=%s"%(self.value if self.islabel else "0x%X"%self.value)
 
 class BranchTarget(Target):
 	"""
@@ -123,7 +123,7 @@ class BranchTarget(Target):
 	use the = sign. This is just for pretty printing.
 	"""
 	def __str__(self):
-		return "%s"%(self.value if self.islabel else "%X"%self.value)
+		return "%s"%(self.value if self.islabel else "0x%X"%self.value)
 
 @promise.sensible()
 @promise.pure()
@@ -1135,7 +1135,7 @@ class STRB(Instruction):
 	def execute(self, registers):
 		if self.cond(registers):
 			addr = self.addr_mode.get(registers)
-			registers.memory.strw(addr, registers[self.rd] & 0xFF)
+			registers.memory.strb(addr, registers[self.rd] & 0xFF)
 	
 	def __str__(self):
 		return "STR%s R%i, %s"%\
@@ -1156,7 +1156,7 @@ class STRH(Instruction):
 	def execute(self, registers):
 		if self.cond(registers):
 			addr = self.addr_mode.get(registers)
-			registers.memory.strw(addr, registers[self.rd] & 0xFFFF)
+			registers.memory.strh(addr, registers[self.rd] & 0xFFFF)
 	
 	def __str__(self):
 		return "STR%s R%i, %s"%\
