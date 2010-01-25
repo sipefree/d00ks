@@ -182,6 +182,18 @@ def p_ldr(p):
 	elif other =="SH":
 		p[0] = instruction.LDRSH(con, p[2].value, p[3])
 
+######
+# LDM
+######
+def p_ldm(p):
+	'command : LDM argument OPENCB registerlist CLOSECB'
+	(ins, con, s, other) = p[1]
+	p[0] = instruction.LDM(con, other, p[2].value, False, p[4])
+
+def p_ldm_(p):
+	'command : LDM argument BANG OPENCB registerlist CLOSECB'
+	(ins, con, s, other) = p[1]
+	p[0] = instruction.LDM(con, other, p[2].value, True, p[5])
 
 ######
 # MLA
@@ -291,6 +303,19 @@ def p_str(p):
 		p[0] = instruction.STRB(con, p[2].value, p[3])
 	elif other == "H":
 		p[0] = instruction.STRH(con, p[2].value, p[3])
+		
+######
+# STM
+######
+def p_stm(p):
+	'command : STM register OPENCB registerlist CLOSECB'
+	(ins, con, s, other) = p[1]
+	p[0] = instruction.STM(con, other, p[2].value, False, p[4])
+
+def p_stm_(p):
+	'command : STM register BANG OPENCB registerlist CLOSECB'
+	(ins, con, s, other) = p[1]
+	p[0] = instruction.STM(con, other, p[2].value, True, p[5])
 
 
 ######
@@ -398,25 +423,56 @@ def p_branchtarget_label(p):
 def p_branchtarget_addr(p):
 	'branchtarget : argument'
 	p[0] = p[1]
+
+
+#####################
+# register list
+#####################
+def p_registerlist_(p):
+	'registerlist : registerlist_item'
+	p[0] = p[1]
+
+def p_registerlist(p):
+	'registerlist : registerlist registerlist_item'
+	p[0] = p[1] + p[2]
+
+#####################
+# register list item
+#####################
+def p_registerlist_item_register(p):
+	'registerlist_item : register'
+	p[0] = [p[1]]
+
+def p_registerlist_item_range(p):
+	'registerlist_item : register TO register'
+	start = p[1]
+	end = p[3]
+	if start.value not in range(0, 16) or end.value not in range(0, 16):
+		raise SyntaxError("Invalid registers %s-%s"%(str(start), str(end)))
+	ls = []
+	for i in range(start.value, end.value+1):
+		ls.append(instruction.reg(i))
+	p[0] = ls
+
 	
 ###############
 # addrmode
 ###############
 
 def p_addrmode_preindexed(p):
-	'addrmode : OPENSQ REGISTER shifter CLOSESQ BANG'
+	'addrmode : OPENSQ register shifter CLOSESQ BANG'
 	p[0] = instruction.AddrmodePreindexed(p[2].value, p[3])
 
 def p_addrmode_immoffset(p):
-	'addrmode : OPENSQ REGISTER shifter CLOSESQ'
+	'addrmode : OPENSQ register shifter CLOSESQ'
 	p[0] = instruction.AddrmodeImmoffset(p[2].value, p[3])
 
 def p_addrmode_postindexed(p):
-	'addrmode : OPENSQ REGISTER CLOSESQ shifter'
+	'addrmode : OPENSQ register CLOSESQ shifter'
 	p[0] = instruction.AddrmodePostindexed(p[2].value, p[4])
 
 def p_addrmode_reg(p):
-	'addrmode : OPENSQ REGISTER CLOSESQ'
+	'addrmode : OPENSQ register CLOSESQ'
 	p[0] = instruction.Addrmode(p[2].value)
 
 def p_addrmode_label(p):
@@ -454,24 +510,41 @@ def p_argument_i(p):
 	p[0] = p[1]
 
 def p_argument_r(p):
-	'argument : REGISTER'
+	'argument : register'
 	p[0] = p[1]
 
 def p_argument_c(p):
 	'argument : CHAR'
 	p[0] = p[1]
 
-def p_argument_sp(p):
-	'argument : SP'
+#############
+# register
+#############
+
+def p_register(p):
+	'register : REGISTER'
+	p[0] = p[1]
+
+def p_register_fp(p):
+	'register : FP'
+	p[0] = instruction.reg(11)
+
+def p_register_fp(p):
+	'register : IP'
+	p[0] = instruction.reg(12)
+
+def p_register_sp(p):
+	'register : SP'
 	p[0] = instruction.reg(13)
 
-def p_argument_lr(p):
-	'argument : LR'
+def p_register_lr(p):
+	'register : LR'
 	p[0] = instruction.reg(14)
 
-def p_argument_pc(p):
-	'argument : PC'
+def p_register_pc(p):
+	'register : PC'
 	p[0] = instruction.reg(15)
+
 
 ########
 # shift

@@ -75,7 +75,7 @@ class Memory(object):
 	Memory is stored using a byte buffer created
 	by the python ctypes module.
 	"""
-	def __init__(self, size=1024):
+	def __init__(self, size=4096):
 		super(Memory, self).__init__()
 		self.size = size
 		self.buffer = create_string_buffer(size)
@@ -126,7 +126,7 @@ class Memory(object):
 		"""
 		real = addr - self.startaddr
 		if real >= self.size:
-			raise MemoryError("Out of bounds access at %i"%addr)
+			raise MemoryError("Out of bounds access at 0x%X"%addr)
 		return real
 	
 	def strb(self, addr, byte):

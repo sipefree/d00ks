@@ -46,7 +46,7 @@ class Program(object):
 	def __init__(self):
 		self.code = []
 		self.registers = register.Registers()
-		self.memory = memory.Memory(1024)
+		self.memory = memory.Memory(4096)
 		self.registers.memory = self.memory
 	
 	def compile(self, tuples):

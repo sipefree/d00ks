@@ -24,7 +24,6 @@ L4
 	B	stop
 
 
-
 stop	B	stop
 
 	AREA	String, DATA, READWRITE

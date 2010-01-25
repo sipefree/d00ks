@@ -58,7 +58,12 @@ class Argument(object):
 	@promise.pure()	
 	def __str__(self):
 		if self.isregister:
-			return "R%i"%self.value
+			spec = [11, 12, 13, 14, 15]
+			names = ['FP', 'IP', 'SP', 'LR', 'PC']
+			if self.value in spec:
+				return names[spec.index(self.value)]
+			else:
+				return "R%i"%self.value
 		else:
 			return "#0x%X"%self.value
 
@@ -545,11 +550,8 @@ class BIC(Instruction):
 	def execute(self, registers):
 		if self.cond(registers):
 			rm = self.shifter_operand.get(registers, flags = self.s)
-			print "rm: 0x%X"%rm
 			neg = ~rm & 0xFFFFFFFF
-			print "~rm: 0x%X"%neg
 			tmp = self.rn.get(registers) & neg
-			print "tmp: 0x%X"%tmp
 			registers[self.rd] = tmp
 			if self.s:
 				registers.flag_set(registers.N, tmp & (1 << 31))
@@ -1022,6 +1024,57 @@ class SMULL(Instruction):
 		return "SMULL%s%s R%i, %s, %s"%\
 			(self.cond.__name__, "S" if self.s else "", self.rdlo, self.rdhi, str(self.rm), str(self.rs))
 
+class LDM(Instruction):
+	"""
+	LDM{<cond>}<addressing_mode> <Rn>{!}, <registers>
+	
+	Load multiple registers
+	"""
+	def __init__(self, cond, addrmode, rn, bang, regs):
+		self.cond = cond
+		self.addrmode = addrmode
+		self.rn = rn
+		self.bang = bang
+		regs.sort(lambda x, y: x.value - y.value)
+		self.regs = regs
+	
+	@promise.sensible()
+	def execute(self, registers):
+		if self.cond(registers):
+			if self.addrmode == "DA" or self.addrmode == "FA":
+				addr = registers[self.rn] - 4*len(self.regs) + 4
+				for regis in self.regs:
+					registers[regis.value] = registers.memory.ldrw(addr)
+					addr += 4
+				if self.bang:
+					registers[self.rn] -= 4*len(self.regs)
+			elif self.addrmode == "IA" or self.addrmode == "FD":
+				addr = registers[self.rn]
+				for regis in self.regs:
+					registers[regis.value] = registers.memory.ldrw(addr)
+					addr += 4
+				if self.bang:
+					registers[self.rn] += 4*len(self.regs)
+			elif self.addrmode == "DB" or self.addrmode == "EA":
+				addr = registers[self.rn] - 4*len(self.regs)
+				for regis in self.regs:
+					registers[regis.value] = registers.memory.ldrw(addr)
+					addr += 4
+				if self.bang:
+					registers[self.rn] -= 4*len(self.regs)
+			elif self.addrmode == "IB" or self.addrmode == "ED":
+				addr = registers[self.rn] - 4
+				for regis in self.regs:
+					registers[regis.value] = registers.memory.ldrw(addr)
+					addr += 4
+				if self.bang:
+					registers[self.rn] += 4*len(self.regs)
+				
+	def __str__(self):
+		regs = map(lambda x: str(x), self.regs)
+		return "LDM%s%s R%i%s, {%s}"%(self.cond.__name__, self.addrmode, self.rn, "!" if self.bang else "", ", ".join(regs))
+
+
 class LDR(Instruction):
 	"""
 	LDR{<cond>} <Rd>, <addressing_mode>
@@ -1097,7 +1150,55 @@ class LDRH(Instruction):
 			(self.cond.__name__, self.rd, str(self.addr_mode))
 
 class STM(Instruction):
-	pass
+	"""
+	STM{<cond>}<addressing_mode> <Rn>{!}, <registers>
+	
+	Store multiple registers
+	"""
+	def __init__(self, cond, addrmode, rn, bang, regs):
+		self.cond = cond
+		self.addrmode = addrmode
+		self.rn = rn
+		self.bang = bang
+		regs.sort(lambda x, y: x.value - y.value)
+		self.regs = regs
+	
+	@promise.sensible()
+	def execute(self, registers):
+		if self.cond(registers):
+			if self.addrmode == "DA" or self.addrmode == "ED":
+				addr = registers[self.rn] - 4*len(self.regs) + 4
+				for regis in self.regs:
+					registers.memory.strw(addr, regis.get(registers))
+					addr += 4
+				if self.bang:
+					registers[self.rn] -= 4*len(self.regs)
+			elif self.addrmode == "IA" or self.addrmode == "EA":
+				addr = registers[self.rn]
+				for regis in self.regs:
+					registers.memory.strw(addr, regis.get(registers))
+					addr += 4
+				if self.bang:
+					registers[self.rn] += 4*len(self.regs)
+			elif self.addrmode == "DB" or self.addrmode == "FD":
+				addr = registers[self.rn] - 4*len(self.regs)
+				for regis in self.regs:
+					registers.memory.strw(addr, regis.get(registers))
+					addr += 4
+				if self.bang:
+					registers[self.rn] -= 4*len(self.regs)
+			elif self.addrmode == "IB" or self.addrmode == "FA":
+				addr = registers[self.rn] - 4
+				for regis in self.regs:
+					registers.memory.strw(addr, regis.get(registers))
+					addr += 4
+				if self.bang:
+					registers[self.rn] += 4*len(self.regs)
+				
+	def __str__(self):
+		regs = map(lambda x: str(x), self.regs)
+		return "STM%s%s R%i%s, {%s}"%(self.cond.__name__, self.addrmode, self.rn, "!" if self.bang else "", ", ".join(regs))
+			
 
 class STR(Instruction):
 	"""

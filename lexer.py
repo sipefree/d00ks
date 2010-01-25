@@ -153,12 +153,18 @@ stuff = [
 	'MEMNUM',
 	'MEMHEXNUM',
 	'BANG',	
+	'OPENCB',
+	'CLOSECB',
+	'TO',
 ]
 tokens = stuff + reserved
 
 t_OPENSQ = r'\['
 t_CLOSESQ = r'\]'
 t_BANG = r'!'
+t_TO = r'-'
+t_OPENCB = r'{'
+t_CLOSECB = r'}'
 
 t_ignore = ' \t,'
 
@@ -248,10 +254,10 @@ def t_error(t):
 def t_LABEL(t):
 	r'[a-zA-Z_]([a-zA-Z0-9_]+)?'
 	if t.value.upper() in perms:
-		t.type = perms[t.value][0]
-		t.value = perms[t.value]
+		t.type = perms[t.value.upper()][0]
+		t.value = perms[t.value.upper()]
 	elif t.value.upper() in reserved:
-		t.type = t.value
+		t.type = t.value.upper()
 	return t
 
 def t_LABELTARGET(t):
