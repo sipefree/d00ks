@@ -383,6 +383,9 @@ class Instruction(object):
 	The class also contains some helper functions for determining
 	carry and overflow and signedness.
 	"""
+	label = ""
+	line = 0
+	
 	def __init__(self, cond, s, rd, rn,  shifter_operand):
 		super(Instruction, self).__init__()
 		self.cond = cond

@@ -17,26 +17,16 @@
 ##########################################################################
 
 
-print "COMPILING PARSER..."
+
 from parser import *
 from sys import argv
 
 f = open(argv[-1])
 prog = f.read()
-
-print "INPUT:"
-i = 1
-for line in prog.split("\n"):
-	print "%i %s"%(i, line)
-	i = i + 1
-print ""
-print "COMPILING."
-
-import pprint
-pp = pprint.PrettyPrinter()
-
 output = parser.parse(prog)
-pp.pprint(output)
+
+for (label, line) in output:
+	print "%s\t%s"%(label+"\n" if label else "", line if line else "")
 
 program = simulator.Program()
 program.compile(output)

@@ -73,7 +73,7 @@ class Program(object):
 		self.code = []
 		
 		self.breakpoints = []
-		
+				
 		
 		for (label,line) in tuples:
 			if line == None:
@@ -103,6 +103,7 @@ class Program(object):
 					self.code.append(line)
 					if label:
 						self.registers.symbol_insert(label, code_woffset)
+						line.label = label
 					code_woffset += 1
 			elif mode == data_s:
 				if isinstance(line, memory.Store):
@@ -118,6 +119,17 @@ class Program(object):
 		Resets the registers, and by proxy, the program counter.
 		"""
 		self.registers = register.Registers()
+	
+	def cursym(self):
+		ans = "{program}"
+		for i in xrange(self.registers[self.registers.PC], -1, -1):
+			line = self.code[i]
+			#print "trying %s %s"%(line.label if line.label != "" else "", line)
+			if line.label != "":
+				ans = line.label
+				num = i
+				break
+		return ans
 
 	@promise.sensible()
 	def step(self):
@@ -147,7 +159,6 @@ class Program(object):
 		# execute
 		self.registers[self.registers.PC] += 1
 		instr.execute(self.registers)
-		print str(instr)
 		if len(self.registers.changed) > 1:
 			self.registers.p()
 			self.registers.set_clean()
@@ -169,7 +180,14 @@ class Program(object):
 		# simple repl
 		lastcmd = 's'
 		while True:
-			cmd = raw_input("%i> "%(self.registers[self.registers.PC]))
+			print ">> " + str(self.code[self.registers[self.registers.PC]])
+			sym = self.cursym()
+			num = self.registers.symbol_table[sym] if sym != "{program}" else 0
+			try:
+				cmd = raw_input("0x%X <%s + 0x%X>: "%(self.registers[self.registers.PC], sym, self.registers[self.registers.PC] - num))
+			except Exception, e:
+				print "\nQuitting."
+				exit(1)
 			if cmd == "": cmd = lastcmd
 			lastcmd = cmd
 			if cmd == "s":
