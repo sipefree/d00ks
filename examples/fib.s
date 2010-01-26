@@ -47,7 +47,7 @@ main
 	sub	sp, sp, #8
 	str	r0, [r11, #-16]
 	str	r1, [r11, #-20]
-	mov	r0, #20
+	mov	r0, #10
 	bl	fib
 	mov	r3, r0
 	mov	r0, r3

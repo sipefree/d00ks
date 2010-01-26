@@ -24,6 +24,9 @@ import cond
 import register
 import simulator
 import memory
+import pdb
+
+debugger = pdb.Pdb()
 
 def p_commands_(p):
 	'commands :'
@@ -224,9 +227,9 @@ def p_mov(p):
 # MUL
 ######
 def p_mul(p):
-	'command : MUL argument argument argument argument'
+	'command : MUL argument argument argument'
 	(ins, con, s, other) = p[1]
-	p[0] = instruction.MUL(con, s, p[2].value, p[3], p[4], p[5])
+	p[0] = instruction.MUL(con, s, p[2].value, p[3], p[4])
 
 
 ######
@@ -635,7 +638,11 @@ def p_dcb_item_hexnum(p):
 
 
 def p_error(p):
-	print "Syntax error at %s!"%p
+	#debugger.set_trace()
+	print "Error: Unexpected %s token on line %i, but the error may be before this point."%(p.type, p.lineno)
+	line = p.lexer.lexdata.split("\n")[p.lineno-1]
+	print line
+	exit(1)
 
 parser = yacc.yacc()
 
