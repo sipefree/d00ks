@@ -16,6 +16,8 @@
 ##########################################################################
 
 import curses, os
+from parser import *
+from sys import argv
 
 class gb: # global variables(ugly but works)
 
@@ -25,7 +27,7 @@ class gb: # global variables(ugly but works)
 	windows = {}
 	dimensions = {'min': (80,30)}
 
-class registersWindow:
+class RegistersWindow:
 	title = "registers"
 	dimensions = {'min':(20,20), 'resizable': False, 'align':1}
 	
@@ -60,7 +62,7 @@ class registersWindow:
 
 		self.wo.overlay(gb.screen)
 
-class memoryWindow:
+class MemoryWindow:
 	title = "Memory View"
 	dimensions = {'min':(18,5),'resizable':True, 'align':1}
 
@@ -89,7 +91,7 @@ class memoryWindow:
 			self.content = ""
 			for r in range(0, rows):
 				 for c in range(0,cols):
-				 	self.content += hex(rawmem[c*r*])
+				 	self.content += hex(rawmem[c*r])
 				 self.content += " "
 				 for c in range(0,cols/2): # cols is going to be a multiple of 4
 				 	self.content += chr(rawmem[c*r]) if rawmem[c*r] >31 and rawmem[c*r] < 127 else "." # experimental NOT  TESTED. (drink time)
@@ -99,13 +101,22 @@ class memoryWindow:
 		self.wo.refresh()
 			 	
 
-class codeWindow:
+class CodeWindow:
 	"""displays the code being executed with highliting"""
 	title = "code"
 	
-class errorScreen:
-	window = None
-	content = None
+	def __init__(self,width,height,posx,posy):
+		self.width = width
+		self.height = height
+		self.posx = posx
+		self.posy = posy
+		self.wo = curses.newwin(height,width,posy,posx)
+		self.wo.addstr(0,2,self.title,curses.A_STANDOUT)
+	def draw():
+		self.wo
+	
+	
+class ErrorWindow
 
 def display():
 	gb.screen.clear()
@@ -115,52 +126,19 @@ def display():
 		gb.curline +=1
 	gb.screen.refresh()
 	
-	
 def restorescreen():
 	curses.nocbreak()
 	curses.echo()
 	curses.endwin()
 	
-def drawregs(regs):
-	gb.windows['registers'][0].addstr(0,2,"Registers:" ,curses.A_BOLD)
-	gb.windows['registers'][1]=1
-	for reg in regs:
-		gb.windows['registers'][0].addstr(gb.windows['registers'][1],2,"%s : %s" %(reg[0],reg[1]),curses.A_BOLD)
-		gb.windows['registers'][1] +=1
-	gb.windows['registers'][0].overlay(gb.screen)
-	
-	gb.windows['registers'][1] =1
-
-def drawcode(code):
-	gb.windows['code'][1] =1
-	gb.windows['code'][0].addstr(0,1,"Code",curses.A_BOLD)
-	for line in code.split("\n"):
-		gb.windows['code'][0].addstr(gb.windows['code'][1],1,line)
-		gb.windows['code'][1] +=1
-	gb.windows['code'][0].overlay(gb.screen)
-	
-	gb.windows['code'][1] = 1
-
-def drawpreview(cont):
-	gb.windows['preview'][1] =1
-	gb.windows['preview'][0].addstr(0,1,"Preview",curses.A_BOLD)
-	for line in cont.split("\n"):
-		gb.windows['preview'][0].addstr(gb.windows['preview'][1],1,line)
-		gb.windows['preview'][1] +=1
-	gb.windows['preview'][0].overlay(gb.screen)
-	
-	gb.windows['preview'][1] = 1
-
-
-def drawmem(_mem):
-	content,(m_from,m_size) = _mem
 	
 
 def drawall():
-	drawregs([('1', 'fffaaa'),('2', '00000000')])
-	drawcode("this is a \n multiline \n \t block \n of code")
-	for mem in gb.memory['visible']:
-		drawmem(mem) 
+	#drawregs([('1', 'fffaaa'),('2', '00000000')])
+	#drawcode("this is a \n multiline \n \t block \n of code")
+	for mem in memoryWindows['visible']:
+		mem.draw()
+		 
 		# mem is a tuple consisting of the memory object and a tuple of 
 		# requested range
 	
@@ -174,10 +152,10 @@ def windowResized():
 	sizey,sizex =  gb.screen.getmaxyx()
 	minx,miny =  gb.dimensions['min']
 	while sizex < minx or sizey < miny:
-		gb.screen.clear()
-		gb.screen.addstr("crazy fool, that doesn't even fit!")
+		screen.clear()
+		screen.addstr("crazy fool, that doesn't even fit!")
 		try:
-			r=(gb.screen.getch())
+			r=(screen.getch())
 			c = chr(r)
 			if c == 'q':
 				quit()
@@ -193,21 +171,42 @@ def windowResized():
 	gb.screen.clear()
 	setup()
 	
-def setup():		
-	gb.windows['error'] = curses.newwin(0,0,2,20)
-	gb.windows['registers'] = [curses.newwin(32,20,2,70),0]
-	gb.windows['registers'][0].border()
-	gb.windows['code'] = [curses.newwin(20,60,2,10),0]
-	gb.windows['code'][0].border()
-	gb.windows['preview'] = [curses.newwin(10,60,24,10),0]
-	gb.windows['preview'][0].border()
+def setup():
 
+	code = CodeWindow(20,60,2,10)
+	registers = RegistersWindow(32,20,2,70)
+	memoryWindows = []
+	memoryWindows.append(MemoryWindow(32,6))
+	errorWindow = curses.newwin(0,0,2,20)
+	
+	readCode()	
+				
+	#gb.windows['error'] = curses.newwin(0,0,2,20)
+	#gb.windows['registers'] = [curses.newwin(32,20,2,70),0]
+	#gb.windows['registers'][0].border()
+	#gb.windows['code'] = [curses.newwin(20,60,2,10),0]
+	#gb.windows['code'][0].border()
+	#gb.windows['preview'] = [curses.newwin(10,60,24,10),0]
+	#gb.windows['preview'][0].border()
+	
+##TODO clean this up
+
+def readCode():
+
+
+	f = open(argv[-1])
+	prog = f.read()
+
+	output = parser.parse(prog)
+	program = simulator.Program()
+	program.compile(output)
+	#gb.memory = 
+	
 
 def main(stdscr):
-	gb.screen = stdscr
-	gb.curline = 1
+	screen = stdscr
+	curline = 1
 	setup()
-	gb.output = os.popen("ls ~/sources/","r").read().split("\n")
 	curses.noecho()
 	curses.cbreak()
 	c=''
@@ -228,7 +227,7 @@ def main(stdscr):
 			quit()
 		else:
 			pass
-	restorescreen()
+#	restorescreen()
 	print "quittting!"
 		
 		
