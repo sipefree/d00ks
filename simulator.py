@@ -191,8 +191,10 @@ class Program(object):
 			except Exception, e:
 				print "\nQuitting."
 				exit(1)
-			if cmd == "": cmd = lastcmd
-			lastcmd = cmd
+			if cmd == "":
+				cmd = lastcmd
+			else:
+				lastcmd = cmd
 			if cmd == "s":
 				self.step_debug()
 			elif cmd == "q":

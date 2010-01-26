@@ -1,0 +1,26 @@
+AREA 	StoreMultiple, CODE, READONLY
+
+start
+	LDR	R13, =STK_TOP
+	
+	LDR	R0, =1
+	LDR	R1, =2
+	LDR	R2, =3
+	LDR	R3, =4
+
+	STMFD	R13 ! { R0-R3 }
+
+	LDMFD	R13 ! { R4 }
+	LDMFD	R13 ! { R5-R7 }
+
+stop
+	B stop
+
+
+
+AREA	Stack, DATA, READWRITE
+
+STK_MEM	SPACE	0x300
+STK_TOP
+
+END

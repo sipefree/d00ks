@@ -89,7 +89,7 @@ reserved = [
 	generate('ADD') +\
 	generate('AND') +\
 	['ASR'] +\
-	generate('B', status=False, fother=['X', 'L']) +\
+	generate('B', fother=['X', 'L']) +\
 	generate('LDR', status=False, other=['B', 'H', 'SB', 'SH']) +\
 	generate('BIC', status=False) +\
 	['BKPT'] +\
