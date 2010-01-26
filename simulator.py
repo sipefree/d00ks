@@ -121,6 +121,9 @@ class Program(object):
 		self.registers = register.Registers()
 	
 	def cursym(self):
+		"""
+		Returns the symbol closes to the current PC. Debug mode only.
+		"""
 		ans = "{program}"
 		for i in xrange(self.registers[self.registers.PC], -1, -1):
 			line = self.code[i]
